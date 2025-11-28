@@ -11,6 +11,8 @@ namespace ZodSharp.Json;
 /// </summary>
 public static class NewtonsoftJsonExtensions
 {
+    private static readonly string[] EmptyPath = Array.Empty<string>();
+
     /// <summary>
     /// Deserializes JSON and validates it using a Zod schema.
     /// </summary>
@@ -27,7 +29,7 @@ public static class NewtonsoftJsonExtensions
                 return ValidationResult<T>.Failure(new ValidationError(
                     "deserialization_failed",
                     "Failed to deserialize JSON",
-                    Array.Empty<string>()
+                    EmptyPath
                 ));
             }
 
@@ -38,7 +40,7 @@ public static class NewtonsoftJsonExtensions
             return ValidationResult<T>.Failure(new ValidationError(
                 "json_error",
                 $"JSON parsing error: {ex.Message}",
-                Array.Empty<string>()
+                EmptyPath
             ));
         }
     }
@@ -70,7 +72,7 @@ public static class NewtonsoftJsonExtensions
             return ValidationResult<T>.Failure(new ValidationError(
                 "json_error",
                 $"JSON parsing error: {ex.Message}",
-                Array.Empty<string>()
+                EmptyPath
             ));
         }
     }
@@ -91,7 +93,7 @@ public static class NewtonsoftJsonExtensions
                 return ValidationResult<T>.Failure(new ValidationError(
                     "deserialization_failed",
                     "Failed to deserialize JSON",
-                    Array.Empty<string>()
+                    EmptyPath
                 ));
             }
 
@@ -102,7 +104,7 @@ public static class NewtonsoftJsonExtensions
             return ValidationResult<T>.Failure(new ValidationError(
                 "json_error",
                 $"JSON parsing error: {ex.Message}",
-                Array.Empty<string>()
+                EmptyPath
             ));
         }
     }

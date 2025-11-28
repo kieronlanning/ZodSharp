@@ -9,6 +9,8 @@ namespace ZodSharp.Schemas;
 /// </summary>
 public class ZodNumber : ZodType<double>
 {
+    private static readonly string[] EmptyPath = Array.Empty<string>();
+
     protected override ValidationResult<double> ParseInternal(double value)
     {
         if (double.IsNaN(value))
@@ -16,55 +18,58 @@ public class ZodNumber : ZodType<double>
             return ValidationResult<double>.Failure(new ValidationError(
                 "invalid_type",
                 "Expected number, but got NaN",
-                Array.Empty<string>()
+                EmptyPath
             ));
         }
 
         return ValidationResult<double>.Success(value);
     }
 
-    /// <summary>
-    /// Adds a minimum value validation.
-    /// </summary>
     public ZodNumber Min(double minValue)
     {
         AddRule(new MinValueRule<double>(minValue));
         return this;
     }
 
-    /// <summary>
-    /// Adds a maximum value validation.
-    /// </summary>
     public ZodNumber Max(double maxValue)
     {
         AddRule(new MaxValueRule<double>(maxValue));
         return this;
     }
 
-    /// <summary>
-    /// Adds an integer validation (must be a whole number).
-    /// </summary>
     public ZodNumber Int()
     {
         AddRule(new IntRule());
         return this;
     }
 
-    /// <summary>
-    /// Adds a positive number validation.
-    /// </summary>
     public ZodNumber Positive()
     {
         AddRule(new MinValueRule<double>(0.0));
         return this;
     }
 
-    /// <summary>
-    /// Adds a negative number validation.
-    /// </summary>
     public ZodNumber Negative()
     {
         AddRule(new MaxValueRule<double>(0.0));
+        return this;
+    }
+
+    public ZodNumber MultipleOf(double divisor, string? message = null)
+    {
+        AddRule(new MultipleOfRule(divisor, message));
+        return this;
+    }
+
+    public ZodNumber Finite(string? message = null)
+    {
+        AddRule(new FiniteRule(message));
+        return this;
+    }
+
+    public ZodNumber Safe(string? message = null)
+    {
+        AddRule(new SafeIntegerRule(message));
         return this;
     }
 }

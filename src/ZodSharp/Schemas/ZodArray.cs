@@ -8,6 +8,8 @@ namespace ZodSharp.Schemas;
 /// <typeparam name="T">The element type</typeparam>
 public class ZodArray<T> : ZodType<T[], T[]>
 {
+    private static readonly string[] EmptyPath = Array.Empty<string>();
+
     private readonly IZodSchema<T, T> _elementSchema;
     private int? _minLength;
     private int? _maxLength;
@@ -24,12 +26,12 @@ public class ZodArray<T> : ZodType<T[], T[]>
             return ValidationResult<T[]>.Failure(new ValidationError(
                 "invalid_type",
                 "Expected array, but got null",
-                Array.Empty<string>()
+                EmptyPath
             ));
         }
 
-        var errors = new List<ValidationError>();
-        var validatedItems = new List<T>();
+        var errors = new List<ValidationError>(value.Length);
+        var validatedItems = new List<T>(value.Length);
 
         for (int i = 0; i < value.Length; i++)
         {
@@ -60,7 +62,7 @@ public class ZodArray<T> : ZodType<T[], T[]>
             return ValidationResult<T[]>.Failure(new ValidationError(
                 "too_small",
                 $"Array must have at least {_minLength.Value} elements, but got {validatedItems.Count}",
-                Array.Empty<string>()
+                EmptyPath
             ));
         }
 
@@ -69,38 +71,35 @@ public class ZodArray<T> : ZodType<T[], T[]>
             return ValidationResult<T[]>.Failure(new ValidationError(
                 "too_big",
                 $"Array must have at most {_maxLength.Value} elements, but got {validatedItems.Count}",
-                Array.Empty<string>()
+                EmptyPath
             ));
         }
 
         return ValidationResult<T[]>.Success(validatedItems.ToArray());
     }
 
-    /// <summary>
-    /// Sets the minimum array length.
-    /// </summary>
     public ZodArray<T> Min(int minLength)
     {
         _minLength = minLength;
         return this;
     }
 
-    /// <summary>
-    /// Sets the maximum array length.
-    /// </summary>
     public ZodArray<T> Max(int maxLength)
     {
         _maxLength = maxLength;
         return this;
     }
 
-    /// <summary>
-    /// Sets the exact array length.
-    /// </summary>
     public ZodArray<T> Length(int length)
     {
         _minLength = length;
         _maxLength = length;
+        return this;
+    }
+
+    public ZodArray<T> NonEmpty(string? message = null)
+    {
+        _minLength = 1;
         return this;
     }
 }

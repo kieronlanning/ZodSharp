@@ -17,6 +17,8 @@ public class ZodObject : ZodType<Dictionary<string, object?>, Dictionary<string,
         _shape = shape;
     }
 
+    private static readonly string[] EmptyPath = Array.Empty<string>();
+
     protected override ValidationResult<Dictionary<string, object?>> ParseInternal(Dictionary<string, object?> value)
     {
         if (value == null)
@@ -24,12 +26,13 @@ public class ZodObject : ZodType<Dictionary<string, object?>, Dictionary<string,
             return ValidationResult<Dictionary<string, object?>>.Failure(new ValidationError(
                 "invalid_type",
                 "Expected object, but got null",
-                Array.Empty<string>()
+                EmptyPath
             ));
         }
 
-        var errors = new List<ValidationError>();
-        var validatedObject = new Dictionary<string, object?>();
+        var shapeCount = _shape.Count;
+        var errors = new List<ValidationError>(shapeCount);
+        var validatedObject = new Dictionary<string, object?>(shapeCount);
 
         foreach (var (key, schema) in _shape)
         {
@@ -70,25 +73,16 @@ public class ZodObject : ZodType<Dictionary<string, object?>, Dictionary<string,
     }
 }
 
-/// <summary>
-/// Builder for creating object schemas with a fluent API.
-/// </summary>
 public class ZodObjectBuilder
 {
     private readonly Dictionary<string, IZodSchema<object, object>> _shape = new();
 
-    /// <summary>
-    /// Adds a field to the object schema.
-    /// </summary>
     public ZodObjectBuilder Field<T>(string name, IZodSchema<T, T> schema)
     {
         _shape[name] = new SchemaWrapper<T>(schema);
         return this;
     }
 
-    /// <summary>
-    /// Builds the object schema.
-    /// </summary>
     public ZodObject Build()
     {
         return new ZodObject(_shape.ToImmutableDictionary());

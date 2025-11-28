@@ -11,6 +11,8 @@ namespace ZodSharp.Core;
 /// <typeparam name="TInput">The input type before validation</typeparam>
 public abstract class ZodType<TOutput, TInput> : IZodSchema<TOutput, TInput>
 {
+    private static readonly string[] EmptyPath = Array.Empty<string>();
+    
     private ImmutableArray<IValidationRule<TOutput>> _rules = ImmutableArray<IValidationRule<TOutput>>.Empty;
     private string? _description;
 
@@ -31,20 +33,28 @@ public abstract class ZodType<TOutput, TInput> : IZodSchema<TOutput, TInput>
 
         var validatedValue = parseResult.Value!;
         
-        var errors = new List<ValidationError>();
+        var rulesCount = _rules.Length;
+        if (rulesCount == 0)
+        {
+            return ValidationResult<TOutput>.Success(validatedValue);
+        }
+
+        List<ValidationError>? errors = null;
+        
         foreach (var rule in _rules)
         {
             if (!rule.IsValid(validatedValue))
             {
+                errors ??= new List<ValidationError>(rulesCount);
                 errors.Add(new ValidationError(
                     "validation_failed",
                     rule.GetErrorMessage(validatedValue),
-                    Array.Empty<string>()
+                    EmptyPath
                 ));
             }
         }
 
-        if (errors.Count > 0)
+        if (errors != null && errors.Count > 0)
             return ValidationResult<TOutput>.Failure(errors);
 
         return ValidationResult<TOutput>.Success(validatedValue);

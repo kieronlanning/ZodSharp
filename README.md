@@ -12,6 +12,8 @@
 🔹 **Type-safe** – Strong typing with advanced C# generics  
 🔹 **High performance** – 10x faster than reflection-based validation  
 🔹 **Cross-platform** – Works on .NET 9.0 and .NET Standard 2.1  
+🔹 **Source Generators** – Compile-time validator generation with `[ZodSchema]` attribute  
+🔹 **DataAnnotations Support** – Automatic validation from `[Required]`, `[StringLength]`, `[Range]`, etc.  
 
 ## 🚀 Installation
 
@@ -50,9 +52,36 @@ if (result.IsSuccess)
 var ageSchema = Z.Number().Min(0).Max(120).Int();
 var ageResult = ageSchema.Validate(25.0);
 
+// Additional number validations
+var positiveSchema = Z.Number().Positive();
+var negativeSchema = Z.Number().Negative();
+var multipleOfSchema = Z.Number().MultipleOf(10); // Must be multiple of 10
+var finiteSchema = Z.Number().Finite(); // Not Infinity
+var safeSchema = Z.Number().Safe(); // Safe integer
+
 // Email validation
 var emailSchema = Z.String().Email();
 var emailResult = emailSchema.Validate("user@example.com");
+
+// URL validation
+var urlSchema = Z.String().Url();
+var urlResult = urlSchema.Validate("https://example.com");
+
+// UUID validation
+var uuidSchema = Z.String().Uuid();
+var uuidResult = uuidSchema.Validate("550e8400-e29b-41d4-a716-446655440000");
+
+// String transformations
+var trimmedSchema = Z.String().Trim();
+var upperSchema = Z.String().ToUpper();
+var lowerSchema = Z.String().ToLower();
+
+// String prefixes and suffixes
+var prefixSchema = Z.String().StartsWith("https://");
+var suffixSchema = Z.String().EndsWith(".com");
+
+// Exact length
+var exactLengthSchema = Z.String().Length(10);
 ```
 
 ### Object Validation
@@ -84,6 +113,12 @@ if (result.IsSuccess)
 ```csharp
 var numbersSchema = Z.Array(Z.Number()).Min(1).Max(10);
 var result = numbersSchema.Validate(new[] { 1.0, 2.0, 3.0 });
+
+// Exact length
+var exactLengthSchema = Z.Array(Z.String()).Length(5);
+
+// Non-empty array
+var nonEmptySchema = Z.Array(Z.String()).NonEmpty();
 ```
 
 ### Optional Fields
@@ -221,13 +256,23 @@ var schema = Z.String().Default("unknown");
 var result = schema.Validate(null); // "unknown"
 ```
 
-### Newtonsoft.Json Integration
-Integrated JSON validation:
+### JSON Integration
+Integrated JSON validation with Newtonsoft.Json:
 
 ```csharp
 using ZodSharp.Json;
 
+// Deserialize and validate from string
 var result = schema.DeserializeAndValidate(jsonString);
+
+// Deserialize and validate from stream (async)
+var result2 = await schema.DeserializeAndValidateAsync(jsonStream);
+
+// Deserialize and validate from JToken
+var result3 = schema.DeserializeAndValidate(jToken);
+
+// Create JsonConverter with validation
+var converter = schema.CreateValidatingConverter();
 ```
 
 ### Compiled Validators
@@ -249,6 +294,54 @@ using ZodSharp.Core;
 var schema = SchemaCache.GetOrCreate("user", () => 
     Z.Object().Field("name", Z.String()).Build()
 );
+```
+
+### Source Generators
+Generate zero-allocation validators at compile time:
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+using ZodSharp.SourceGenerators;
+
+[ZodSchema]
+public class User
+{
+    [Required]
+    [StringLength(50, MinimumLength = 3)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required]
+    [Range(0, 120)]
+    public int Age { get; set; }
+
+    [EmailAddress]
+    public string? Email { get; set; }
+}
+
+// Auto-generated validator
+var result = UserSchema.Validate(user);
+var validated = UserSchema.Parse(user); // Throws on failure
+
+// Composition methods
+var refined = UserSchema.Refine(user, u => u.Age >= 18, "Must be adult");
+var combined = UserSchema.And(user, u => u.Name.Length > 5, "Name too short");
+```
+
+**Features:**
+- ✅ Automatic validation from DataAnnotations attributes
+- ✅ Zero-reflection, zero-allocation validators
+- ✅ Composition methods (`.And()`, `.Or()`, `.Refine()`)
+- ✅ Supports classes, structs, and records
+
+See [SOURCE_GENERATOR_EXAMPLES.md](SOURCE_GENERATOR_EXAMPLES.md) for more details.
+
+### Span<T> Validation
+Zero-allocation string validation using spans:
+
+```csharp
+var schema = Z.String().Min(3).Max(50).Email();
+var span = "user@example.com".AsSpan();
+var result = schema.ValidateSpan(span);
 ```
 
 ## 📝 License
