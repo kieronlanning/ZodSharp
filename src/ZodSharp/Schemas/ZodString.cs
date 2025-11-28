@@ -104,17 +104,35 @@ public class ZodString : ZodType<string>
 
     public ZodString ToLower()
     {
-        return Transform(s => s.ToLowerInvariant());
+        var transform = Transform(s => s.ToLowerInvariant());
+        return new ZodStringWrapper(transform);
     }
 
     public ZodString ToUpper()
     {
-        return Transform(s => s.ToUpperInvariant());
+        var transform = Transform(s => s.ToUpperInvariant());
+        return new ZodStringWrapper(transform);
     }
 
     public ZodString Trim()
     {
-        return Transform(s => s.Trim());
+        var transform = Transform(s => s.Trim());
+        return new ZodStringWrapper(transform);
+    }
+
+    private class ZodStringWrapper : ZodString
+    {
+        private readonly ZodTransform<string, string> _transform;
+
+        public ZodStringWrapper(ZodTransform<string, string> transform)
+        {
+            _transform = transform;
+        }
+
+        protected override ValidationResult<string> ParseInternal(string value)
+        {
+            return _transform.Validate(value);
+        }
     }
 }
 
