@@ -221,18 +221,18 @@ We maintain comprehensive performance tests in the `performance/` folder. Run th
 
 ```bash
 # Run all performance benchmarks
-dotnet run --project ZodSharp/performance/performance.csproj -c Release
+dotnet run --project performance/performance.csproj -c Release
 
 # Run specific test suites
-dotnet run --project ZodSharp/performance/performance.csproj -c Release --filter "*MemoryPerformanceTests*"
+dotnet run --project performance/performance.csproj -c Release --filter "*MemoryPerformanceTests*"
 ```
 
 **Key performance highlights**:
-- ✅ **10x faster** than reflection-based validation libraries
-- ✅ **Zero allocations** for primitive validations
-- ✅ **Sub-microsecond** validation for simple types
-- ✅ **Minimal GC pressure** with struct-based architecture
-- ✅ **Scalable** performance even with complex nested schemas
+- **10x faster** than reflection-based validation libraries
+- **Zero allocations** for primitive validations
+- **Sub-microsecond** validation for simple types
+- **Minimal GC pressure** with struct-based architecture
+- **Scalable** performance even with complex nested schemas
 
 See the [performance README](performance/README.md) for detailed benchmark results and optimization tips.
 
@@ -382,8 +382,6 @@ var combined = UserSchema.And(user, u => u.Name.Length > 5, "Name too short");
 - Zero-reflection, zero-allocation validators
 - Composition methods (`.And()`, `.Or()`, `.Refine()`)
 - Supports classes, structs, and records
-
-See [SOURCE_GENERATOR_EXAMPLES.md](SOURCE_GENERATOR_EXAMPLES.md) for more details.
 
 ### Span<T> Validation
 Zero-allocation string validation using spans:
