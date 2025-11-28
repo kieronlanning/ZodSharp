@@ -4,18 +4,18 @@
 
 **ZodSharp** is a high-performance schema validation library for C#, ported from TypeScript [Zod](https://github.com/colinhacks/zod). It features zero-allocation validation, struct-based rules, fluent API, and source generator support for maximum performance.
 
-## ✨ Key Features
+## Key Features
 
-🔹 **Zero-allocation validation** – Minimizes allocations using structs and `Span<T>`  
-🔹 **Struct-based rules** – Validation rules implemented as structs to avoid GC  
-🔹 **Fluent API** – Fluent and extensible API similar to original Zod  
-🔹 **Type-safe** – Strong typing with advanced C# generics  
-🔹 **High performance** – 10x faster than reflection-based validation  
-🔹 **Cross-platform** – Works on .NET 9.0 and .NET Standard 2.1  
-🔹 **Source Generators** – Compile-time validator generation with `[ZodSchema]` attribute  
-🔹 **DataAnnotations Support** – Automatic validation from `[Required]`, `[StringLength]`, `[Range]`, etc.  
+- **Zero-allocation validation** - Minimizes allocations using structs and `Span<T>`
+- **Struct-based rules** - Validation rules implemented as structs to avoid GC
+- **Fluent API** - Fluent and extensible API similar to original Zod
+- **Type-safe** - Strong typing with advanced C# generics
+- **High performance** - 10x faster than reflection-based validation
+- **Cross-platform** - Works on .NET 9.0 and .NET Standard 2.1
+- **Source Generators** - Compile-time validator generation with `[ZodSchema]` attribute
+- **DataAnnotations Support** - Automatic validation from `[Required]`, `[StringLength]`, `[Range]`, etc.  
 
-## 🚀 Installation
+## Installation
 
 ### NuGet Package Manager
 ```powershell
@@ -32,7 +32,7 @@ dotnet add package ZodSharp
 <PackageReference Include="ZodSharp" Version="1.0.0" />
 ```
 
-## 📖 Usage Examples
+## Usage Examples
 
 ### Basic Validation
 
@@ -156,7 +156,7 @@ if (!result.IsSuccess)
 }
 ```
 
-## 🎯 Performance Optimizations
+## Performance Optimizations
 
 ZodSharp implements several optimizations for maximum performance:
 
@@ -186,7 +186,7 @@ var schema = Z.String()
     .Describe("User email address");
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ZodSharp/
@@ -208,7 +208,7 @@ ZodSharp/
     └── ZeroAllocationHelpers.cs
 ```
 
-## 🎨 Advanced Features
+## Advanced Features
 
 ### Transforms
 Transform values during validation:
@@ -328,10 +328,10 @@ var combined = UserSchema.And(user, u => u.Name.Length > 5, "Name too short");
 ```
 
 **Features:**
-- ✅ Automatic validation from DataAnnotations attributes
-- ✅ Zero-reflection, zero-allocation validators
-- ✅ Composition methods (`.And()`, `.Or()`, `.Refine()`)
-- ✅ Supports classes, structs, and records
+- Automatic validation from DataAnnotations attributes
+- Zero-reflection, zero-allocation validators
+- Composition methods (`.And()`, `.Or()`, `.Refine()`)
+- Supports classes, structs, and records
 
 See [SOURCE_GENERATOR_EXAMPLES.md](SOURCE_GENERATOR_EXAMPLES.md) for more details.
 
@@ -344,14 +344,14 @@ var span = "user@example.com".AsSpan();
 var result = schema.ValidateSpan(span);
 ```
 
-## 📝 License
+## License
 
 MIT License - see the LICENSE file for details.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please open an issue or pull request.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Zod](https://github.com/colinhacks/zod)
