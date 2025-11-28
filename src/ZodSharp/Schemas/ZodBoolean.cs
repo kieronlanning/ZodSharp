@@ -7,6 +7,11 @@ namespace ZodSharp.Schemas;
 /// </summary>
 public class ZodBoolean : ZodType<bool>
 {
+    /// <summary>
+    /// Parses and validates a boolean value.
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <returns>A validation result</returns>
     protected override ValidationResult<bool> ParseInternal(bool value)
     {
         return ValidationResult<bool>.Success(value);

@@ -13,12 +13,22 @@ public class ZodTransform<TInput, TOutput> : ZodType<TOutput, TInput>
     private readonly IZodSchema<TInput, TInput> _inputSchema;
     private readonly Func<TInput, TOutput> _transform;
 
+    /// <summary>
+    /// Initializes a new instance of the ZodTransform class.
+    /// </summary>
+    /// <param name="inputSchema">The input schema</param>
+    /// <param name="transform">The transformation function</param>
     public ZodTransform(IZodSchema<TInput, TInput> inputSchema, Func<TInput, TOutput> transform)
     {
         _inputSchema = inputSchema;
         _transform = transform;
     }
 
+    /// <summary>
+    /// Parses and transforms the input value.
+    /// </summary>
+    /// <param name="value">The value to validate and transform</param>
+    /// <returns>A validation result</returns>
     protected override ValidationResult<TOutput> ParseInternal(TInput value)
     {
         var validationResult = _inputSchema.Validate(value);

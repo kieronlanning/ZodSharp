@@ -7,6 +7,11 @@ namespace ZodSharp.Schemas;
 /// </summary>
 public class ZodNull : ZodType<object?>
 {
+    /// <summary>
+    /// Parses and validates a null value.
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <returns>A validation result</returns>
     protected override ValidationResult<object?> ParseInternal(object? value)
     {
         if (value != null)

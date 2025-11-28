@@ -15,6 +15,10 @@ public class ZodLazy<T> : ZodType<T>
     private IZodSchema<T, T>? _cachedSchema;
     private readonly object _lock = new();
 
+    /// <summary>
+    /// Initializes a new instance of the ZodLazy class.
+    /// </summary>
+    /// <param name="schemaGetter">The function that gets the schema</param>
     public ZodLazy(Func<IZodSchema<T, T>> schemaGetter)
     {
         _schemaGetter = schemaGetter;
@@ -41,6 +45,11 @@ public class ZodLazy<T> : ZodType<T>
         }
     }
 
+    /// <summary>
+    /// Parses and validates the value using the lazy schema.
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <returns>A validation result</returns>
     protected override ValidationResult<T> ParseInternal(T value)
     {
         return Schema.Validate(value);

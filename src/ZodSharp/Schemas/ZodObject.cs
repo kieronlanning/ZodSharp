@@ -12,6 +12,10 @@ public class ZodObject : ZodType<Dictionary<string, object?>, Dictionary<string,
 {
     private readonly ImmutableDictionary<string, IZodSchema<object, object>> _shape;
 
+    /// <summary>
+    /// Initializes a new instance of the ZodObject class.
+    /// </summary>
+    /// <param name="shape">The object shape (property schemas)</param>
     public ZodObject(ImmutableDictionary<string, IZodSchema<object, object>> shape)
     {
         _shape = shape;
@@ -19,6 +23,11 @@ public class ZodObject : ZodType<Dictionary<string, object?>, Dictionary<string,
 
     private static readonly string[] EmptyPath = Array.Empty<string>();
 
+    /// <summary>
+    /// Parses and validates an object value.
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <returns>A validation result</returns>
     protected override ValidationResult<Dictionary<string, object?>> ParseInternal(Dictionary<string, object?> value)
     {
         if (value == null)
@@ -73,16 +82,30 @@ public class ZodObject : ZodType<Dictionary<string, object?>, Dictionary<string,
     }
 }
 
+/// <summary>
+/// Builder for creating object schemas with a fluent API.
+/// </summary>
 public class ZodObjectBuilder
 {
     private readonly Dictionary<string, IZodSchema<object, object>> _shape = new();
 
+    /// <summary>
+    /// Adds a field to the object schema.
+    /// </summary>
+    /// <typeparam name="T">The field type</typeparam>
+    /// <param name="name">The field name</param>
+    /// <param name="schema">The field schema</param>
+    /// <returns>This builder for method chaining</returns>
     public ZodObjectBuilder Field<T>(string name, IZodSchema<T, T> schema)
     {
         _shape[name] = new SchemaWrapper<T>(schema);
         return this;
     }
 
+    /// <summary>
+    /// Builds the object schema.
+    /// </summary>
+    /// <returns>The built object schema</returns>
     public ZodObject Build()
     {
         return new ZodObject(_shape.ToImmutableDictionary());

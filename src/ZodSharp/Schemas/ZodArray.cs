@@ -14,11 +14,20 @@ public class ZodArray<T> : ZodType<T[], T[]>
     private int? _minLength;
     private int? _maxLength;
 
+    /// <summary>
+    /// Initializes a new instance of the ZodArray class.
+    /// </summary>
+    /// <param name="elementSchema">The schema for array elements</param>
     public ZodArray(IZodSchema<T, T> elementSchema)
     {
         _elementSchema = elementSchema;
     }
 
+    /// <summary>
+    /// Parses and validates an array value.
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <returns>A validation result</returns>
     protected override ValidationResult<T[]> ParseInternal(T[] value)
     {
         if (value == null)
@@ -78,18 +87,33 @@ public class ZodArray<T> : ZodType<T[], T[]>
         return ValidationResult<T[]>.Success(validatedItems.ToArray());
     }
 
+    /// <summary>
+    /// Sets the minimum array length.
+    /// </summary>
+    /// <param name="minLength">The minimum length</param>
+    /// <returns>This schema for method chaining</returns>
     public ZodArray<T> Min(int minLength)
     {
         _minLength = minLength;
         return this;
     }
 
+    /// <summary>
+    /// Sets the maximum array length.
+    /// </summary>
+    /// <param name="maxLength">The maximum length</param>
+    /// <returns>This schema for method chaining</returns>
     public ZodArray<T> Max(int maxLength)
     {
         _maxLength = maxLength;
         return this;
     }
 
+    /// <summary>
+    /// Sets the exact array length.
+    /// </summary>
+    /// <param name="length">The exact length</param>
+    /// <returns>This schema for method chaining</returns>
     public ZodArray<T> Length(int length)
     {
         _minLength = length;
@@ -97,6 +121,11 @@ public class ZodArray<T> : ZodType<T[], T[]>
         return this;
     }
 
+    /// <summary>
+    /// Requires the array to be non-empty (at least 1 element).
+    /// </summary>
+    /// <param name="message">Optional error message</param>
+    /// <returns>This schema for method chaining</returns>
     public ZodArray<T> NonEmpty(string? message = null)
     {
         _minLength = 1;

@@ -12,17 +12,29 @@ public class ZodException : Exception
     /// </summary>
     public ImmutableArray<ValidationError> Errors { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the ZodException class.
+    /// </summary>
+    /// <param name="errors">The validation errors</param>
     public ZodException(ImmutableArray<ValidationError> errors)
         : base($"Validation failed with {errors.Length} error(s)")
     {
         Errors = errors;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the ZodException class.
+    /// </summary>
+    /// <param name="errors">The validation errors</param>
     public ZodException(IEnumerable<ValidationError> errors)
         : this(errors.ToImmutableArray())
     {
     }
 
+    /// <summary>
+    /// Returns a string representation of the exception including all validation errors.
+    /// </summary>
+    /// <returns>A string representation of the exception</returns>
     public override string ToString()
     {
         if (Errors.IsDefaultOrEmpty)

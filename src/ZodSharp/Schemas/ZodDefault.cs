@@ -12,12 +12,22 @@ public class ZodDefault<T> : ZodType<T, T?>
     private readonly IZodSchema<T> _innerSchema;
     private readonly T _defaultValue;
 
+    /// <summary>
+    /// Initializes a new instance of the ZodDefault class.
+    /// </summary>
+    /// <param name="innerSchema">The inner schema</param>
+    /// <param name="defaultValue">The default value</param>
     public ZodDefault(IZodSchema<T> innerSchema, T defaultValue)
     {
         _innerSchema = innerSchema;
         _defaultValue = defaultValue;
     }
 
+    /// <summary>
+    /// Parses and validates the value, using the default if null.
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <returns>A validation result</returns>
     protected override ValidationResult<T> ParseInternal(T? value)
     {
         if (value == null)

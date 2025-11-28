@@ -26,6 +26,13 @@ public readonly struct ValidationError
     /// </summary>
     public IReadOnlyDictionary<string, object?>? Parameters { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the ValidationError struct.
+    /// </summary>
+    /// <param name="code">The error code</param>
+    /// <param name="message">The error message</param>
+    /// <param name="path">The path to the field that failed validation</param>
+    /// <param name="parameters">Additional error parameters</param>
     public ValidationError(string code, string message, string[]? path = null, IReadOnlyDictionary<string, object?>? parameters = null)
     {
         Code = code;

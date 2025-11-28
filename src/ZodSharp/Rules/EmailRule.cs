@@ -14,11 +14,21 @@ public readonly struct EmailRule : Core.IValidationRule<string>
         TimeSpan.FromMilliseconds(100)
     );
 
+    /// <summary>
+    /// Validates that the value matches the email format.
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <returns>True if valid, false otherwise</returns>
     public bool IsValid(in string value)
     {
         return EmailRegex.IsMatch(value);
     }
 
+    /// <summary>
+    /// Gets the error message for a failed validation.
+    /// </summary>
+    /// <param name="value">The value that failed validation</param>
+    /// <returns>The error message</returns>
     public string GetErrorMessage(in string value)
     {
         return $"Invalid email format: {value}";

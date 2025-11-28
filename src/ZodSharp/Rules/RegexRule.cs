@@ -11,17 +11,32 @@ public readonly struct RegexRule : Core.IValidationRule<string>
     private readonly Regex _pattern;
     private readonly string? _message;
 
+    /// <summary>
+    /// Initializes a new instance of the RegexRule struct.
+    /// </summary>
+    /// <param name="pattern">The regex pattern</param>
+    /// <param name="message">Optional error message</param>
     public RegexRule(Regex pattern, string? message = null)
     {
         _pattern = pattern;
         _message = message;
     }
 
+    /// <summary>
+    /// Validates that the value matches the regex pattern.
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <returns>True if valid, false otherwise</returns>
     public bool IsValid(in string value)
     {
         return _pattern.IsMatch(value);
     }
 
+    /// <summary>
+    /// Gets the error message for a failed validation.
+    /// </summary>
+    /// <param name="value">The value that failed validation</param>
+    /// <returns>The error message</returns>
     public string GetErrorMessage(in string value)
     {
         return _message ?? $"String does not match the required pattern: {_pattern}";

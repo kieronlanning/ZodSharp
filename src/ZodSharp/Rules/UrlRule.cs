@@ -16,11 +16,20 @@ public readonly struct UrlRule : Core.IValidationRule<string>
 
     private readonly string? _message;
 
+    /// <summary>
+    /// Initializes a new instance of the UrlRule struct.
+    /// </summary>
+    /// <param name="message">Optional error message</param>
     public UrlRule(string? message = null)
     {
         _message = message;
     }
 
+    /// <summary>
+    /// Validates that the value is a valid URL.
+    /// </summary>
+    /// <param name="value">The value to validate</param>
+    /// <returns>True if valid, false otherwise</returns>
     public bool IsValid(in string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -30,6 +39,11 @@ public readonly struct UrlRule : Core.IValidationRule<string>
                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 
+    /// <summary>
+    /// Gets the error message for a failed validation.
+    /// </summary>
+    /// <param name="value">The value that failed validation</param>
+    /// <returns>The error message</returns>
     public string GetErrorMessage(in string value)
     {
         return _message ?? $"Invalid URL format: {value}";
