@@ -24,13 +24,13 @@ jobs:
           echo "version=$TAG" >> $GITHUB_OUTPUT
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore src/ZodSharp/ZodSharp.csproj
 
       - name: Build (release)
-        run: dotnet build -c Release --no-restore /p:Version=${{ steps.version.outputs.version }}
+        run: dotnet build src/ZodSharp/ZodSharp.csproj -c Release --no-restore /p:Version=${{ steps.version.outputs.version }}
 
       - name: Pack
-        run: dotnet pack -c Release --no-build -o ./nupkg /p:PackageVersion=${{ steps.version.outputs.version }}
+        run: dotnet pack src/ZodSharp/ZodSharp.csproj -c Release --no-build -o ./nupkg /p:PackageVersion=${{ steps.version.outputs.version }}
 
       - name: Push to NuGet
         env:
@@ -40,3 +40,4 @@ jobs:
             --api-key "$NUGET_API_KEY" \
             --source "https://api.nuget.org/v3/index.json" \
             --skip-duplicate
+
