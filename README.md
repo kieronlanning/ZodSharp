@@ -325,6 +325,72 @@ var result3 = schema.DeserializeAndValidate(jToken);
 var converter = schema.CreateValidatingConverter();
 ```
 
+### JSON Schema Interoperability
+
+Share schemas between TypeScript (Zod) and C# (ZodSharp) using JSON Schema. This enables infinite interoperability, allowing you to define a schema in one language and reuse it in another.
+
+#### Export to JSON Schema (ZodSharp -> JSON Schema)
+
+```csharp
+var userSchema = Z.Object()
+    .Field("name", Z.String().Min(3))
+    .Field("email", Z.String().Email())
+    .Field("age", Z.Number().Min(0).Int())
+    .Build();
+
+// Convert to JSON Schema object
+var jsonSchema = Z.ToJsonSchema<Dictionary<string, object?>>(userSchema, new ToJsonSchemaOptions 
+{ 
+    Title = "User",
+    Id = "https://example.com/schemas/user.json" 
+});
+
+// Serialize to string
+var jsonString = JsonConvert.SerializeObject(jsonSchema, JsonSchemaSerializerOptions.Default);
+```
+
+#### Import from JSON Schema (JSON Schema -> ZodSharp)
+
+```csharp
+var jsonSchemaString = @"{
+    ""type"": ""object"",
+    ""properties"": {
+        ""name"": { ""type"": ""string"", ""minLength"": 3 },
+        ""email"": { ""type"": ""string"", ""format"": ""email"" }
+    },
+    ""required"": [""name"", ""email""]
+}";
+
+// Parse into ZodSharp schema
+var userSchema = Z.FromJsonSchema(jsonSchemaString);
+
+// Validate data
+var result = userSchema.Validate(userData);
+```
+
+#### Cross-Platform Scenario
+
+**Frontend (TypeScript/Zod):**
+```typescript
+import { z } from "zod";
+
+const UserSchema = z.object({
+  username: z.string().min(3),
+  email: z.string().email()
+});
+
+// Zod v4+ natively supports JSON Schema conversion
+const jsonSchema = z.toJSONSchema(UserSchema);
+// Send jsonSchema to backend...
+```
+
+**Backend (C#/ZodSharp):**
+```csharp
+// Receive jsonSchema...
+var userSchema = Z.FromJsonSchema(jsonSchemaString);
+var result = userSchema.Validate(incomingData);
+```
+
 ### Compiled Validators
 Compiled validators for maximum performance:
 

@@ -8,7 +8,7 @@ namespace ZodSharp.Schemas;
 /// Schema for object validation.
 /// Validates object properties against their schemas.
 /// </summary>
-public class ZodObject : ZodType<Dictionary<string, object?>, Dictionary<string, object?>>
+public class ZodObject : ZodType<Dictionary<string, object?>, Dictionary<string, object?>>, IZodSchema<object, object>
 {
     private readonly ImmutableDictionary<string, IZodSchema<object, object>> _shape;
 
@@ -79,6 +79,29 @@ public class ZodObject : ZodType<Dictionary<string, object?>, Dictionary<string,
         }
 
         return ValidationResult<Dictionary<string, object?>>.Success(validatedObject);
+    }
+    
+    // Explicit interface implementation for IZodSchema<object, object>
+    ValidationResult<object> IZodSchema<object, object>.Validate(object value)
+    {
+        if (value is Dictionary<string, object?> dict)
+        {
+            var result = Validate(dict);
+            return result.IsSuccess 
+                ? ValidationResult<object>.Success(result.Value!) 
+                : ValidationResult<object>.Failure(result.Errors);
+        }
+        
+        return ValidationResult<object>.Failure(new ValidationError(
+            "invalid_type",
+            $"Expected Dictionary<string, object?>, but got {value?.GetType().Name ?? "null"}",
+            EmptyPath
+        ));
+    }
+    
+    ValueTask<ValidationResult<object>> IZodSchema<object, object>.ValidateAsync(object value)
+    {
+        return new ValueTask<ValidationResult<object>>(((IZodSchema<object, object>)this).Validate(value));
     }
 }
 

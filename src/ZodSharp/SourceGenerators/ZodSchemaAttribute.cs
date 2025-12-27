@@ -1,5 +1,3 @@
-using System;
-
 namespace ZodSharp.SourceGenerators;
 
 /// <summary>

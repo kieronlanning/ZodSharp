@@ -1,8 +1,13 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace ZodSharp.SourceGenerators;
 
@@ -72,11 +77,7 @@ public class ZodSchemaGenerator : IIncrementalGenerator
         if (!hasZodSchemaAttribute)
             return null;
 
-        return new ClassInfo
-        {
-            Symbol = symbol,
-            Declaration = declaration
-        };
+        return new ClassInfo(symbol, declaration);
     }
 
     /// <summary>
@@ -229,16 +230,24 @@ public class ZodSchemaGenerator : IIncrementalGenerator
 
         if (isRequired)
         {
-            sb.AppendLine($"        if (value.{propertyName} == null)");
-            sb.AppendLine("        {");
-            sb.AppendLine("            errors.Add(new ValidationError(");
-            sb.AppendLine("                \"missing_field\",");
-            sb.AppendLine($"                \"Required field '{propertyName}' is null\",");
-            sb.AppendLine($"                new[] {{ \"{propertyName}\" }}");
-            sb.AppendLine("            ));");
-            sb.AppendLine("        }");
-            sb.AppendLine("        else");
-            sb.AppendLine("        {");
+            if (propertyType.IsReferenceType || propertyType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            {
+                sb.AppendLine($"        if (value.{propertyName} == null)");
+                sb.AppendLine("        {");
+                sb.AppendLine("            errors.Add(new ValidationError(");
+                sb.AppendLine("                \"missing_field\",");
+                sb.AppendLine($"                \"Required field '{propertyName}' is null\",");
+                sb.AppendLine($"                new[] {{ \"{propertyName}\" }}");
+                sb.AppendLine("            ));");
+                sb.AppendLine("        }");
+                sb.AppendLine("        else");
+                sb.AppendLine("        {");
+            }
+            else
+            {
+                // For non-nullable value types, they can't be null, so we just open the block for consistency with closing brace
+                sb.AppendLine("        {"); 
+            }
         }
         else
         {
@@ -314,7 +323,7 @@ public class ZodSchemaGenerator : IIncrementalGenerator
             var minLengthArg = stringLengthAttr.NamedArguments.FirstOrDefault(kvp => kvp.Key == "MinimumLength");
             var minLength = minLengthArg.Value.Value ?? 0;
 
-            if (minLength > 0)
+            if ((int)minLength > 0)
             {
                 sb.AppendLine($"            if (value.{propertyName}.Length < {minLength})");
                 sb.AppendLine("            {");
@@ -591,7 +600,13 @@ public class ZodSchemaGenerator : IIncrementalGenerator
     /// </summary>
     private sealed class ClassInfo
     {
-        public required INamedTypeSymbol Symbol { get; init; }
-        public required TypeDeclarationSyntax Declaration { get; init; }
+        public INamedTypeSymbol Symbol { get; }
+        public TypeDeclarationSyntax Declaration { get; }
+        
+        public ClassInfo(INamedTypeSymbol symbol, TypeDeclarationSyntax declaration)
+        {
+            Symbol = symbol;
+            Declaration = declaration;
+        }
     }
 }

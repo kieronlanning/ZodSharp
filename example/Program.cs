@@ -69,3 +69,7 @@ catch (ZodException ex)
 
 Console.WriteLine("\n");
 AdvancedExamples.RunAll();
+
+Console.WriteLine("\n");
+JsonSchemaExamples.RunAll();
+

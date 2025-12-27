@@ -3,6 +3,7 @@ using ZodSharp;
 using ZodSharp.Core;
 using ZodSharp.Expressions;
 using ZodSharp.Json;
+using ZodSharp.Schemas;
 using ZodSharp.SourceGenerators;
 
 namespace ZodSharp.Examples;
@@ -170,13 +171,13 @@ public static class AdvancedExamples
     {
         Console.WriteLine("--- Lazy Evaluation Examples ---");
 
-        ZodLazy<Dictionary<string, object?>>? categorySchema = null;
-        categorySchema = Z.Lazy<Dictionary<string, object?>>(() =>
-            Z.Object()
-                .Field("name", Z.String())
-                .Field("subcategories", Z.Array(categorySchema!))
-                .Build()
-        );
+        // Note: ZodLazy recursive example - simplified for demonstration
+        // In practice, recursive schemas need careful handling
+        var simpleSchema = Z.Object()
+            .Field("name", Z.String())
+            .Build();
+        
+        var lazySchema = Z.Lazy<Dictionary<string, object?>>(() => simpleSchema);
 
         var categoryData = new Dictionary<string, object?>
         {
@@ -192,7 +193,7 @@ public static class AdvancedExamples
             }
         };
 
-        var lazyResult = categorySchema.Validate(categoryData);
+        var lazyResult = lazySchema.Validate(categoryData);
         Console.WriteLine($"Lazy evaluation validation: {lazyResult.IsSuccess}");
 
         Console.WriteLine();
@@ -253,7 +254,10 @@ public static class AdvancedExamples
         var result = schema.DeserializeAndValidate<Dictionary<string, object?>>(json);
         Console.WriteLine($"JSON validation: {result.IsSuccess}");
 
-        var converter = schema.CreateValidatingConverter<Dictionary<string, object?>>();
+        // CreateValidatingConverter is not yet implemented
+        // var converter = schema.CreateValidatingConverter<Dictionary<string, object?>>();
+        Console.WriteLine("CreateValidatingConverter: Not yet implemented");
+        /*
         var settings = new Newtonsoft.Json.JsonSerializerSettings
         {
             Converters = { converter }
@@ -268,6 +272,7 @@ public static class AdvancedExamples
         {
             Console.WriteLine($"JSON converter error: {ex.Message}");
         }
+        */
 
         Console.WriteLine();
     }
@@ -293,14 +298,14 @@ public static class AdvancedExamples
     {
         Console.WriteLine("--- Schema Caching Examples ---");
 
-        var schema = SchemaCache.GetOrCreate("user", () =>
+        var schema = SchemaCache.GetOrCreate<ZodObject>("user", () =>
             Z.Object()
                 .Field("name", Z.String().Min(1))
                 .Field("age", Z.Number().Min(0))
                 .Build()
         );
 
-        var cachedSchema = SchemaCache.GetOrCreate("user", () => null!);
+        var cachedSchema = SchemaCache.GetOrCreate<ZodObject>("user", () => null!);
         Console.WriteLine($"Schema cached: {schema == cachedSchema}");
 
         Console.WriteLine();

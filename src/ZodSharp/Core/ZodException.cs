@@ -17,9 +17,9 @@ public class ZodException : Exception
     /// </summary>
     /// <param name="errors">The validation errors</param>
     public ZodException(ImmutableArray<ValidationError> errors)
-        : base($"Validation failed with {errors.Length} error(s)")
+        : base($"Validation failed with {(errors.IsDefault ? 0 : errors.Length)} error(s)")
     {
-        Errors = errors;
+        Errors = errors.IsDefault ? ImmutableArray<ValidationError>.Empty : errors;
     }
 
     /// <summary>
