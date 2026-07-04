@@ -21,31 +21,33 @@ var numbersResult = numbersSchema.Validate(new[] { 1.0, 2.0, 3.0 });
 Console.WriteLine($"Numbers validation: {(numbersResult.IsSuccess ? "Success" : "Failed")}");
 
 var userSchema = Z.Object()
-    .Field("name", Z.String().Min(1))
-    .Field("age", Z.Number().Min(0).Max(120))
-    .Field("email", Z.String().Email())
-    .Build();
+	.Field("name", Z.String().Min(1))
+	.Field("age", Z.Number().Min(0).Max(120))
+	.Field("email", Z.String().Email())
+	.Build();
 
 var userData = new Dictionary<string, object?>
 {
-    { "name", "John Doe" },
-    { "age", 30.0 },
-    { "email", "john@example.com" }
+	{ "name", "John Doe" },
+	{ "age", 30.0 },
+	{ "email", "john@example.com" },
 };
 
 var userResult = userSchema.Validate(userData);
 if (userResult.IsSuccess)
 {
-    Console.WriteLine("User validation: Success");
-    Console.WriteLine($"Validated user: {string.Join(", ", userResult.Value!.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
+	Console.WriteLine("User validation: Success");
+	Console.WriteLine(
+		$"Validated user: {string.Join(", ", userResult.Value!.Select(kvp => $"{kvp.Key}={kvp.Value}"))}"
+	);
 }
 else
 {
-    Console.WriteLine("User validation: Failed");
-    foreach (var error in userResult.Errors)
-    {
-        Console.WriteLine($"  - {string.Join(".", error.Path)}: {error.Message}");
-    }
+	Console.WriteLine("User validation: Failed");
+	foreach (var error in userResult.Errors)
+	{
+		Console.WriteLine($"  - {string.Join(".", error.Path)}: {error.Message}");
+	}
 }
 
 var optionalSchema = Z.Optional(Z.String());
@@ -56,15 +58,15 @@ Console.WriteLine($"Optional value: {(optionalResult2.IsSuccess ? "Success" : "F
 
 try
 {
-    var invalidResult = nameSchema.Parse("AB");
+	var invalidResult = nameSchema.Parse("AB");
 }
 catch (ZodException ex)
 {
-    Console.WriteLine($"Validation error: {ex.Message}");
-    foreach (var error in ex.Errors)
-    {
-        Console.WriteLine($"  - {error.Message}");
-    }
+	Console.WriteLine($"Validation error: {ex.Message}");
+	foreach (var error in ex.Errors)
+	{
+		Console.WriteLine($"  - {error.Message}");
+	}
 }
 
 Console.WriteLine("\n");
