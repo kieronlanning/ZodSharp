@@ -69,3 +69,6 @@ catch (ZodException ex)
 
 Console.WriteLine("\n");
 AdvancedExamples.RunAll();
+
+Console.WriteLine("\n");
+DependencyInjectionExamples.RunAll();
