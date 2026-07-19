@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<TargetFrameworks></TargetFrameworks>
+		<TargetFramework>net10.0</TargetFramework>
+		<NoWarn>$(NoWarn);CA1303;CA1308;</NoWarn>
+		<NoWarn>$(NoWarn);CS0471;</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- DI container for the IServiceProvider examples. -->
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+		<ProjectReference Include="..\NewtonsoftJson\NewtonsoftJson.csproj" />
+		<!-- Direct reference required when we're using a local project ref -->
+		<ProjectReference
+			Include="..\SourceGenerators\SourceGenerators.csproj"
+			OutputItemType="Analyzer"
+			ReferenceOutputAssembly="false"
+			PrivateAssets="all"
+		/>
+	</ItemGroup>
+</Project>

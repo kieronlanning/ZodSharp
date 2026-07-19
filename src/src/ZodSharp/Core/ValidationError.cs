@@ -1,0 +1,125 @@
+using System.Collections.Immutable;
+
+namespace ZodSharp.Core;
+
+/// <summary>
+/// Represents a validation error.
+/// Uses struct to minimize allocations.
+/// </summary>
+public readonly record struct ValidationError
+{
+	/// <summary>
+	/// The error code (e.g., "invalid_type", "too_small", "too_big")
+	/// </summary>
+	public string Code { get; }
+
+	/// <summary>
+	/// The error message
+	/// </summary>
+	public string Message { get; }
+
+	/// <summary>
+	/// The path to the field that failed validation (e.g., ["user", "email"])
+	/// </summary>
+	public ImmutableArray<string> Path { get; }
+
+	/// <summary>
+	/// The origin category for structured issues (e.g. "string", "array", "collection").
+	/// </summary>
+	public string? Origin { get; }
+
+	/// <summary>
+	/// The inclusive minimum bound for size-based validation issues.
+	/// </summary>
+	public int? Minimum { get; }
+
+	/// <summary>
+	/// The inclusive maximum bound for size-based validation issues.
+	/// </summary>
+	public int? Maximum { get; }
+
+	/// <summary>
+	/// Indicates whether the bound is inclusive when supplied.
+	/// </summary>
+	public bool? Inclusive { get; }
+
+	/// <summary>
+	/// Additional error parameters
+	/// </summary>
+	public IReadOnlyDictionary<string, object?>? Parameters { get; }
+
+	/// <summary>
+	/// Initializes a new instance of the ValidationError struct.
+	/// </summary>
+	/// <param name="code">The error code</param>
+	/// <param name="message">The error message</param>
+	/// <param name="path">The path to the field that failed validation</param>
+	/// <param name="parameters">Additional error parameters</param>
+	/// <param name="origin">The origin category for structured issues.</param>
+	/// <param name="minimum">The inclusive minimum bound for structured size issues.</param>
+	/// <param name="maximum">The inclusive maximum bound for structured size issues.</param>
+	/// <param name="inclusive">Whether the structured bound is inclusive.</param>
+	public ValidationError(
+		string code,
+		string message,
+		string[]? path = null,
+		IReadOnlyDictionary<string, object?>? parameters = null,
+		string? origin = null,
+		int? minimum = null,
+		int? maximum = null,
+		bool? inclusive = null
+	)
+	{
+		Code = code;
+		Message = message;
+		Path = path is null ? [] : ImmutableArray.Create(path);
+		Parameters = parameters;
+		Origin = origin;
+		Minimum = minimum;
+		Maximum = maximum;
+		Inclusive = inclusive;
+	}
+
+	/// <summary>
+	/// Creates a validation error using a precomputed immutable path.
+	/// </summary>
+	/// <param name="code">The error code.</param>
+	/// <param name="message">The error message.</param>
+	/// <param name="path">The precomputed immutable path.</param>
+	/// <param name="parameters">Additional error parameters.</param>
+	/// <param name="origin">The origin category for structured issues.</param>
+	/// <param name="minimum">The inclusive minimum bound for structured size issues.</param>
+	/// <param name="maximum">The inclusive maximum bound for structured size issues.</param>
+	/// <param name="inclusive">Whether the structured bound is inclusive.</param>
+	public static ValidationError Create(
+		string code,
+		string message,
+		ImmutableArray<string> path,
+		IReadOnlyDictionary<string, object?>? parameters = null,
+		string? origin = null,
+		int? minimum = null,
+		int? maximum = null,
+		bool? inclusive = null
+	) => new(code, message, path.IsDefault ? [] : path, parameters, origin, minimum, maximum, inclusive);
+
+	ValidationError(
+		string code,
+		string message,
+		ImmutableArray<string> path,
+		IReadOnlyDictionary<string, object?>? parameters,
+		string? origin,
+		int? minimum,
+		int? maximum,
+		bool? inclusive
+	)
+	{
+		Code = code;
+		Message = message;
+		Path = path;
+		Parameters = parameters;
+		Origin = origin;
+		Minimum = minimum;
+		Maximum = maximum;
+		Inclusive = inclusive;
+	}
+}

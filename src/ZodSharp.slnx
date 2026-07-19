@@ -1,0 +1,28 @@
+<Solution>
+	<Folder Name="/Solution Items/">
+		<File Path="../.editorconfig" />
+		<File Path="../Directory.Packages.props" />
+		<File Path="../global.json" />
+		<File Path="../package.json" />
+		<File Path="Directory.Build.props" />
+		<File Path="Directory.Build.targets" />
+	</Folder>
+	<Folder Name="/src/examples/">
+		<Project Path="src/Examples.CLI/Examples.CLI.csproj" />
+	</Folder>
+	<Folder Name="/tests/">
+		<Project Path="tests/AspNetCore.UnitTests/AspNetCore.UnitTests.csproj" />
+		<Project Path="tests/NewtonsoftJson.UnitTests/NewtonsoftJson.UnitTests.csproj" />
+		<Project Path="tests/SourceGenerators.UnitTests/SourceGenerators.UnitTests.csproj" />
+		<Project Path="tests/SystemTextJson.UnitTests/SystemTextJson.UnitTests.csproj" />
+		<Project Path="tests/ZodSharp.PerformanceTests/ZodSharp.PerformanceTests.csproj" />
+		<Project Path="tests/ZodSharp.UnitTests/ZodSharp.UnitTests.csproj" />
+	</Folder>
+	<Folder Name="/src/">
+		<Project Path="src/AspNetCore/AspNetCore.csproj" />
+		<Project Path="src/NewtonsoftJson/NewtonsoftJson.csproj" />
+		<Project Path="src/SourceGenerators/SourceGenerators.csproj" />
+		<Project Path="src/SystemTextJson/SystemTextJson.csproj" />
+		<Project Path="src/ZodSharp/ZodSharp.csproj" />
+	</Folder>
+</Solution>
