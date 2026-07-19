@@ -1,4 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System.Globalization;
+using System.Reflection;
+using Microsoft.CodeAnalysis;
 using ZodSharp.SourceGenerators.Infra;
 
 namespace ZodSharp.SourceGenerators;
@@ -47,6 +49,48 @@ public partial class ZodSchemaGeneratorTests : SourceGeneratorTestBase<ZodSchema
 			.That(errors)
 			.IsEmpty()
 			.Because("Errors:\n\t" + string.Join("\t", errors.Select(e => e.ToString() + Environment.NewLine)));
+	}
+
+	static async Task AssertNoDiagnostics(GeneratorDriverRunResult result, DiagnosticSeverity? minimumSeverity = null)
+	{
+		if (minimumSeverity.HasValue)
+		{
+			foreach (var diag in result.Diagnostics)
+			{
+				await Assert.That(diag.Severity < minimumSeverity.Value).IsTrue();
+			}
+		}
+		else
+			await Assert
+				.That(result.Diagnostics.Length)
+				.IsZero()
+				.Because(
+					$"Expecting no diagnostics:\n"
+						+ string.Join(
+							"  ",
+							result.Diagnostics.Select(d =>
+								$"[{d.Severity}]{d.Id}: {d.GetMessage(CultureInfo.InvariantCulture)}\n"
+							)
+						)
+				);
+	}
+
+	static async Task<Assembly> CompileToAssemblyAsync(Compilation compilation, CancellationToken cancellationToken)
+	{
+		await using MemoryStream assemblyStream = new();
+		var emitResult = compilation.Emit(assemblyStream, cancellationToken: cancellationToken);
+		if (!emitResult.Success)
+		{
+			var diagnostics = string.Join(
+				Environment.NewLine,
+				emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString())
+			);
+
+			throw new InvalidOperationException(diagnostics);
+		}
+
+		assemblyStream.Position = 0;
+		return System.Reflection.Assembly.Load(assemblyStream.ToArray());
 	}
 
 	static Diagnostic[] GetGeneratorDiagnostics(GeneratorDriverRunResult result) =>
