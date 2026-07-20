@@ -94,4 +94,50 @@ public static class Z
 	/// Creates a discriminated union builder.
 	/// </summary>
 	public static ZodDiscriminatedUnionBuilder DiscriminatedUnion(string discriminator) => new(discriminator);
+
+	/// <summary>
+	/// Creates a string enum schema that validates against a set of allowed values.
+	/// Equivalent to Zod's <c>z.enum(["a", "b"])</c>.
+	/// </summary>
+	/// <param name="values">The allowed string values.</param>
+	public static ZodEnum Enum(params string[] values) => new(values.ToHashSet());
+
+	/// <summary>
+	/// Creates a native enum schema that validates against a C# enum's defined members.
+	/// Equivalent to Zod's <c>z.nativeEnum(Enum)</c>.
+	/// </summary>
+	/// <typeparam name="TEnum">The enum type.</typeparam>
+	public static ZodNativeEnum<TEnum> Enum<TEnum>()
+		where TEnum : struct, Enum => new();
+
+	/// <summary>
+	/// Creates a record schema that validates all dictionary values against
+	/// <paramref name="valueSchema"/>. Equivalent to Zod's
+	/// <c>z.record(valueSchema)</c>.
+	/// </summary>
+	/// <typeparam name="TValue">The value type.</typeparam>
+	/// <param name="valueSchema">The schema for all values.</param>
+	public static ZodRecord<TValue> Record<TValue>(IZodSchema<TValue, TValue> valueSchema) => new(valueSchema);
+
+	/// <summary>
+	/// Creates a two-element tuple schema. Equivalent to Zod's
+	/// <c>z.tuple([a, b])</c>.
+	/// </summary>
+	/// <typeparam name="T1">The first element type.</typeparam>
+	/// <typeparam name="T2">The second element type.</typeparam>
+	public static ZodTuple<T1, T2> Tuple<T1, T2>(IZodSchema<T1, T1> schema1, IZodSchema<T2, T2> schema2) =>
+		new(schema1, schema2);
+
+	/// <summary>
+	/// Creates a three-element tuple schema. Equivalent to Zod's
+	/// <c>z.tuple([a, b, c])</c>.
+	/// </summary>
+	/// <typeparam name="T1">The first element type.</typeparam>
+	/// <typeparam name="T2">The second element type.</typeparam>
+	/// <typeparam name="T3">The third element type.</typeparam>
+	public static ZodTuple<T1, T2, T3> Tuple<T1, T2, T3>(
+		IZodSchema<T1, T1> schema1,
+		IZodSchema<T2, T2> schema2,
+		IZodSchema<T3, T3> schema3
+	) => new(schema1, schema2, schema3);
 }
