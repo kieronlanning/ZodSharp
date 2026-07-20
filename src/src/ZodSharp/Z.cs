@@ -59,6 +59,27 @@ public static class Z
 	public static ZodUnion Union(params IZodSchema<object, object>[] options) => new(options);
 
 	/// <summary>
+	/// Creates a typed union schema of two options, yielding a
+	/// <see cref="Unions.Union{T1,T2}"/> on success.
+	/// </summary>
+	/// <typeparam name="T1">The first option's type.</typeparam>
+	/// <typeparam name="T2">The second option's type.</typeparam>
+	/// <param name="option1">The first option schema.</param>
+	/// <param name="option2">The second option schema.</param>
+	public static ZodTypedUnion<T1, T2> Union<T1, T2>(IZodSchema<T1, T1> option1, IZodSchema<T2, T2> option2) =>
+		new(option1, option2);
+
+	/// <summary>
+	/// Creates an intersection schema requiring both <paramref name="left"/> and
+	/// <paramref name="right"/> to pass. Equivalent to Zod's
+	/// <c>z.intersection(a, b)</c>.
+	/// </summary>
+	/// <typeparam name="T">The validated type.</typeparam>
+	/// <param name="left">The first schema.</param>
+	/// <param name="right">The second schema.</param>
+	public static ZodIntersection<T> Intersection<T>(IZodSchema<T, T> left, IZodSchema<T, T> right) => new(left, right);
+
+	/// <summary>
 	/// Creates a literal schema.
 	/// </summary>
 	public static ZodLiteral<T> Literal<T>(T value)

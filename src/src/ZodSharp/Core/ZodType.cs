@@ -242,6 +242,42 @@ public abstract class ZodType<TOutput, TInput> : IZodSchema<TOutput, TInput>
 		return new Schemas.ZodPrefault<TOutput>(new RefinementAdapter<TOutput>(adapter), prefaultValue);
 	}
 
+	/// <summary>
+	/// Requires both this schema and <paramref name="other"/> to pass (intersection).
+	/// Equivalent to Zod's <c>.and(other)</c> method. Returns a new composable schema.
+	/// </summary>
+	/// <param name="other">The other schema that must also pass.</param>
+	/// <returns>A new <see cref="Schemas.ZodIntersection{TOutput}"/> schema.</returns>
+	public Schemas.ZodIntersection<TOutput> And(IZodSchema<TOutput, TOutput> other)
+	{
+		if (typeof(TInput) != typeof(TOutput))
+		{
+			throw new InvalidOperationException("And can only be used when input and output types are the same");
+		}
+
+		var adapter = (IZodSchema<TOutput, TOutput>)(object)this;
+		return new Schemas.ZodIntersection<TOutput>(new RefinementAdapter<TOutput>(adapter), other);
+	}
+
+	/// <summary>
+	/// Accepts the value if either this schema or <paramref name="other"/> passes.
+	/// Equivalent to Zod's <c>.or(other)</c> method. Returns a new composable schema
+	/// that yields a typed <see cref="Unions.Union{T1,T2}"/>.
+	/// </summary>
+	/// <typeparam name="TOther">The other option's output type.</typeparam>
+	/// <param name="other">The alternative schema.</param>
+	/// <returns>A new <see cref="Schemas.ZodTypedUnion{TOutput,TOther}"/> schema.</returns>
+	public Schemas.ZodTypedUnion<TOutput, TOther> Or<TOther>(IZodSchema<TOther, TOther> other)
+	{
+		if (typeof(TInput) != typeof(TOutput))
+		{
+			throw new InvalidOperationException("Or can only be used when input and output types are the same");
+		}
+
+		var adapter = (IZodSchema<TOutput, TOutput>)(object)this;
+		return new Schemas.ZodTypedUnion<TOutput, TOther>(new RefinementAdapter<TOutput>(adapter), other);
+	}
+
 	sealed class TransformInputAdapter<TAdapterInput, TAdapterOutput>(IZodSchema<TAdapterOutput, TAdapterInput> inner)
 		: IZodSchema<TAdapterOutput, TAdapterInput>
 	{
