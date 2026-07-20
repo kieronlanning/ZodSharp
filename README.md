@@ -372,15 +372,16 @@ public class User
 var result = UserSchema.Validate(user);
 var validated = UserSchema.Parse(user); // Throws on failure
 
-// Composition methods
-var refined = UserSchema.Refine(user, u => u.Age >= 18, "Must be adult");
-var combined = UserSchema.And(user, u => u.Name.Length > 5, "Name too short");
+// Value-first composition methods (validate a value, then run an extra predicate)
+var refined = UserSchema.ApplyRefine(user, u => u.Age >= 18, "Must be adult");
+var combined = UserSchema.ApplyAnd(user, u => u.Name.Length > 5, "Name too short");
+var either = UserSchema.ApplyOr(user, u => u.Age < 18, "Must be an adult or a minor with consent");
 ```
 
 **Features:**
 - Automatic validation from DataAnnotations attributes
 - Zero-reflection, zero-allocation validators
-- Composition methods (`.And()`, `.Or()`, `.Refine()`)
+- Value-first composition methods (`.ApplyAnd()`, `.ApplyOr()`, `.ApplyRefine()`) plus instance schema-composing composition (`.Refine()`, `.SuperRefine()`, `.Pipe()`, `.Catch()`, `.Prefault()`, `.Default()`)
 - Supports classes, structs, and records
 
 #### Supported DataAnnotations size validators

@@ -146,6 +146,102 @@ public abstract class ZodType<TOutput, TInput> : IZodSchema<TOutput, TInput>
 		return new Schemas.ZodDefault<TOutput>(new RefinementAdapter<TOutput>(adapter), defaultValue);
 	}
 
+	/// <summary>
+	/// Adds a context-aware custom validation refinement that may emit multiple,
+	/// path-located issues. Equivalent to Zod's <c>superRefine</c> method.
+	/// </summary>
+	/// <param name="refinement">A callback receiving a <see cref="Schemas.RefineCtx{T}"/>.</param>
+	/// <returns>A new schema that applies the refinement after the base validation.</returns>
+	public Schemas.ZodSuperRefinement<TOutput> SuperRefine(Action<Schemas.RefineCtx<TOutput>> refinement)
+	{
+		if (typeof(TInput) != typeof(TOutput))
+		{
+			throw new InvalidOperationException(
+				"SuperRefine can only be used when input and output types are the same"
+			);
+		}
+
+		var adapter = (IZodSchema<TOutput, TOutput>)(object)this;
+		return new Schemas.ZodSuperRefinement<TOutput>(new RefinementAdapter<TOutput>(adapter), refinement);
+	}
+
+	/// <summary>
+	/// Pipes the output of this schema through another schema. Equivalent to
+	/// Zod's <c>.pipe(target)</c> method and the foundation of validation
+	/// pipelines: this schema validates the input, then <paramref name="target"/>
+	/// validates the resulting value.
+	/// </summary>
+	/// <typeparam name="TTargetOutput">The output type of <paramref name="target"/>.</typeparam>
+	/// <param name="target">The schema that validates this schema's output.</param>
+	/// <returns>A new <see cref="Schemas.ZodPipe{TSource,TTarget}"/> schema.</returns>
+	public Schemas.ZodPipe<TOutput, TTargetOutput> Pipe<TTargetOutput>(IZodSchema<TTargetOutput, TOutput> target)
+	{
+		if (typeof(TInput) != typeof(TOutput))
+		{
+			throw new InvalidOperationException("Pipe can only be used when input and output types are the same");
+		}
+
+		var adapter = (IZodSchema<TOutput, TOutput>)(object)this;
+		return new Schemas.ZodPipe<TOutput, TTargetOutput>(new RefinementAdapter<TOutput>(adapter), target);
+	}
+
+	/// <summary>
+	/// Returns a fallback value when validation fails instead of propagating
+	/// errors. Equivalent to Zod's <c>.catch(fallback)</c> method.
+	/// </summary>
+	/// <param name="fallback">The value returned on validation failure.</param>
+	/// <returns>A new <see cref="Schemas.ZodCatch{T}"/> schema.</returns>
+	public Schemas.ZodCatch<TOutput> Catch(TOutput fallback)
+	{
+		if (typeof(TInput) != typeof(TOutput))
+		{
+			throw new InvalidOperationException("Catch can only be used when input and output types are the same");
+		}
+
+		var adapter = (IZodSchema<TOutput, TOutput>)(object)this;
+		return new Schemas.ZodCatch<TOutput>(new RefinementAdapter<TOutput>(adapter), fallback);
+	}
+
+	/// <summary>
+	/// Returns a fallback value when validation fails instead of propagating
+	/// errors. Equivalent to Zod's <c>.catch(fn)</c> overload.
+	/// </summary>
+	/// <param name="fallbackFactory">
+	/// A function producing the fallback value from the input and the errors.
+	/// </param>
+	/// <returns>A new <see cref="Schemas.ZodCatch{T}"/> schema.</returns>
+	public Schemas.ZodCatch<TOutput> Catch(
+		Func<TOutput, System.Collections.Immutable.ImmutableArray<ValidationError>, TOutput> fallbackFactory
+	)
+	{
+		if (typeof(TInput) != typeof(TOutput))
+		{
+			throw new InvalidOperationException("Catch can only be used when input and output types are the same");
+		}
+
+		var adapter = (IZodSchema<TOutput, TOutput>)(object)this;
+		return new Schemas.ZodCatch<TOutput>(new RefinementAdapter<TOutput>(adapter), fallbackFactory);
+	}
+
+	/// <summary>
+	/// Substitutes <paramref name="prefaultValue"/> when the input is the default
+	/// for <typeparamref name="TOutput"/>, then validates the result. Equivalent
+	/// to Zod's <c>.prefault(value)</c> method. Unlike <see cref="Default"/>, the
+	/// substituted value is still validated by this schema.
+	/// </summary>
+	/// <param name="prefaultValue">The value used when the input is default.</param>
+	/// <returns>A new <see cref="Schemas.ZodPrefault{T}"/> schema.</returns>
+	public Schemas.ZodPrefault<TOutput> Prefault(TOutput prefaultValue)
+	{
+		if (typeof(TInput) != typeof(TOutput))
+		{
+			throw new InvalidOperationException("Prefault can only be used when input and output types are the same");
+		}
+
+		var adapter = (IZodSchema<TOutput, TOutput>)(object)this;
+		return new Schemas.ZodPrefault<TOutput>(new RefinementAdapter<TOutput>(adapter), prefaultValue);
+	}
+
 	sealed class TransformInputAdapter<TAdapterInput, TAdapterOutput>(IZodSchema<TAdapterOutput, TAdapterInput> inner)
 		: IZodSchema<TAdapterOutput, TAdapterInput>
 	{

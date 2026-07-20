@@ -112,6 +112,10 @@ partial class ZodSchemaGenerator
 
 			GenerateValidateMethod(generationContext, classSymbol, fullTypeName, diagnostics);
 			GenerateParseMethod(generationContext, fullTypeName);
+			// Emit the value-first composition methods (ApplyAnd/ApplyOr/ApplyRefine).
+			var compositionSb = new StringBuilder();
+			GenerateCompositionMethods(compositionSb, classSymbol, fullTypeName);
+			generationContext.Writer.Write(compositionSb.ToString());
 		}
 
 		// Resolve the optional custom async validation method from [ZodSchema(CustomValidationMethodName = ...)].
@@ -572,11 +576,13 @@ partial class ZodSchemaGenerator
 	{
 		sb.AppendLine();
 		sb.AppendLine("    /// <summary>");
-		sb.AppendLine("    /// Creates a schema that requires both this and another schema to pass.");
-		sb.AppendLine("    /// Equivalent to Zod's .and() method.");
+		sb.AppendLine(
+			"    /// Validates the value and then requires an additional predicate to pass (value-first .and())."
+		);
+		sb.AppendLine("    /// Equivalent to Zod's .and() semantics applied to a value.");
 		sb.AppendLine("    /// </summary>");
 		sb.AppendLine(
-			$"    public static {TypeHelpers.ValidationResult.Global()}<{fullTypeName}> And({fullTypeName} value, global::System.Func<{fullTypeName}, bool> additionalValidation, string? message = null)"
+			$"    public static {TypeHelpers.ValidationResult.Global()}<{fullTypeName}> ApplyAnd({fullTypeName} value, global::System.Func<{fullTypeName}, bool> additionalValidation, string? message = null)"
 		);
 		sb.AppendLine("    {");
 		sb.AppendLine("        var result = Validate(value);");
@@ -601,11 +607,13 @@ partial class ZodSchemaGenerator
 		sb.AppendLine();
 
 		sb.AppendLine("    /// <summary>");
-		sb.AppendLine("    /// Creates a schema that requires either this or another validation to pass.");
-		sb.AppendLine("    /// Equivalent to Zod's .or() method.");
+		sb.AppendLine(
+			"    /// Validates the value and accepts it if either the schema or an alternative predicate passes (value-first .or())."
+		);
+		sb.AppendLine("    /// Equivalent to Zod's .or() semantics applied to a value.");
 		sb.AppendLine("    /// </summary>");
 		sb.AppendLine(
-			$"    public static ${TypeHelpers.ValidationResult.Global()}<{fullTypeName}> Or({fullTypeName} value, global::System.Func<{fullTypeName}, bool> alternativeValidation, string? message = null)"
+			$"    public static {TypeHelpers.ValidationResult.Global()}<{fullTypeName}> ApplyOr({fullTypeName} value, global::System.Func<{fullTypeName}, bool> alternativeValidation, string? message = null)"
 		);
 		sb.AppendLine("    {");
 		sb.AppendLine("        var result = Validate(value);");
@@ -630,11 +638,13 @@ partial class ZodSchemaGenerator
 		sb.AppendLine();
 
 		sb.AppendLine("    /// <summary>");
-		sb.AppendLine("    /// Adds a custom refinement to the validation.");
-		sb.AppendLine("    /// Equivalent to Zod's .refine() method.");
+		sb.AppendLine(
+			"    /// Validates the value and then runs a custom refinement predicate (value-first .refine())."
+		);
+		sb.AppendLine("    /// Equivalent to Zod's .refine() semantics applied to a value.");
 		sb.AppendLine("    /// </summary>");
 		sb.AppendLine(
-			$"    public static {TypeHelpers.ValidationResult.Global()}<{fullTypeName}> Refine({fullTypeName} value, global:System.Func<{fullTypeName}, bool> refinement, string? message = null)"
+			$"    public static {TypeHelpers.ValidationResult.Global()}<{fullTypeName}> ApplyRefine({fullTypeName} value, global::System.Func<{fullTypeName}, bool> refinement, string? message = null)"
 		);
 		sb.AppendLine("    {");
 		sb.AppendLine("        var result = Validate(value);");
