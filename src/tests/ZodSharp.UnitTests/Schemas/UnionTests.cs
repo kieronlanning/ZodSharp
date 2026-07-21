@@ -165,10 +165,12 @@ public class UnionTests
 	public async Task Union_GivenIUnion_CastAndAccessValue()
 	{
 		// Arrange
-		IUnion union = Union<string, int>.Create("hello");
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance
+		IUnion sut = Union<string, int>.Create("hello");
+#pragma warning restore CA1859 // Use concrete types when possible for improved performance
 
 		// Act & Assert
-		await Assert.That(union.Tag).IsEqualTo(0);
-		await Assert.That(union.Value).IsEqualTo("hello");
+		await Assert.That(sut.Tag).IsEqualTo(0);
+		await Assert.That(sut.Value).IsEqualTo("hello");
 	}
 }
