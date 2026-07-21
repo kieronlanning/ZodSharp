@@ -11,10 +11,12 @@ namespace ZodSharp.Core;
 public interface IZodSchemaValidator { }
 
 /// <summary>
-/// Type-safe validator contract usable from DI. Mirrors <see cref="IZodSchema{TOutput, TInput}.Validate"/>.
+/// Type-safe validator contract usable from DI. Mirrors IZodSchema.Validate.
+/// Also extends IZodSchema<T> so that generated *SchemaValidator adapters can
+/// participate in the full schema composition API (.And(), .Or(), .Pipe(), etc.).
 /// </summary>
 /// <typeparam name="T">The validated value type.</typeparam>
-public interface IZodSchemaValidator<T> : IZodSchemaValidator
+public interface IZodSchemaValidator<T> : IZodSchemaValidator, IZodSchema<T>
 {
 	/// <summary>
 	/// Validates <paramref name="value"/> and returns a result.

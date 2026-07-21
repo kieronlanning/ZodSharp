@@ -30,7 +30,7 @@ namespace Testing
 		await Assert.That(generatedSource).Contains("ApplyAnd");
 		await Assert.That(generatedSource).Contains("ApplyOr");
 		await Assert.That(generatedSource).Contains("ApplyRefine");
-		// Compilation succeeding proves the previously-buggy `Or` emission (a stray
+		// Compilation succeeding proves the previously-buggy Or emission (a stray
 		// dollar sign before the return type) is fixed.
 	}
 
@@ -64,5 +64,52 @@ namespace Testing
 		// Assert
 		var isSuccess = (bool)result.GetType().GetProperty("IsSuccess")!.GetValue(result)!;
 		await Assert.That(isSuccess).IsTrue();
+	}
+
+	[Test]
+	public async Task GeneratedValidator_ImplementsIZodSchema_CanParticipateInComposition(
+		CancellationToken cancellationToken
+	)
+	{
+		// Arrange — a model with [ZodSchema] whose generated validator is used as
+		// an IZodSchema<T> argument to a composition method (Z.Intersection).
+		const string source =
+			@"
+using ZodSharp;
+using ZodSharp.Core;
+using ZodSharp.Schemas;
+
+namespace Testing
+{
+	[ZodSchema]
+	public class Composable
+	{
+		public int Age { get; set; }
+	}
+
+	public static class CompositionUser
+	{
+		// The generated ComposableSchemaValidator implements IZodSchema<Composable>,
+		// so it can be passed as an argument to composition methods.
+		public static IZodSchema<Composable> GetSchema() => new ComposableSchemaValidator();
+
+		public static bool IsIZodSchema() => new ComposableSchemaValidator() is IZodSchema<Composable>;
+	}
+}
+";
+
+		// Act — compile and invoke, proving the generated validator can be cast to
+		// IZodSchema<T> and used in the composition API.
+		var assembly = await CompileToAssemblyAsync(source, cancellationToken);
+
+		// Assert
+		var helper = assembly.GetType("Testing.CompositionUser")!;
+		var isSchemaMethod = helper.GetMethod("IsIZodSchema")!;
+		var isSchema = (bool)isSchemaMethod.Invoke(null, [])!;
+		await Assert.That(isSchema).IsTrue();
+
+		var getSchemaMethod = helper.GetMethod("GetSchema")!;
+		var schema = getSchemaMethod.Invoke(null, [])!;
+		await Assert.That(schema).IsNotNull();
 	}
 }
