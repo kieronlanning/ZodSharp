@@ -52,7 +52,7 @@ public abstract class IncrementalSourceGeneratorTestBase<TGenerator>(bool throwO
 			CompileToAssembly = driverContext.CompileToAssembly,
 			ThrowOnLogError = throwOnLogError,
 			DisableSourceGeneratorPropertyName =
-				SourceGenHelpers.DisableZodSharpSourceGeneratorProperty,
+				SourceGenLibrary.DisableZodSharpSourceGeneratorProperty,
 			DisableSourceGeneratorValue = driverContext.DisableSourceGenerator,
 			PreprocessReferences = driverContext.PreprocessReferences,
 			ExcludeGeneratedAttributes = ImmutableArray.Create(GeneratedAttributes),

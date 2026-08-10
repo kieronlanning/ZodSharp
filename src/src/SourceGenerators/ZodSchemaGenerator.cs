@@ -20,12 +20,12 @@ public sealed partial class ZodSchemaGenerator : IIncrementalGenerator
 			ctx.AddEmbeddedAttributeDefinition();
 
 			ctx.AddSource(
-				$"{nameof(TypeHelpers.ZodSchemaAttribute)}.g.cs",
-				EmbeddedResources.LoadTemplate(nameof(TypeHelpers.ZodSchemaAttribute))
+				$"{nameof(TypeLibrary.ZodSchemaAttribute)}.g.cs",
+				EmbeddedResources.Load(nameof(TypeLibrary.ZodSchemaAttribute))
 			);
 		});
 
-		var generationValueProviders = SourceGenHelpers.GetGeneratorValueProviders(
+		var generationValueProviders = SourceGenLibrary.GetGeneratorValueProviders(
 			context,
 			_logger
 		);

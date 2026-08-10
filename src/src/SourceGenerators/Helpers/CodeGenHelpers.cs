@@ -5,9 +5,9 @@ namespace ZodSharp.SourceGenerators.Helpers;
 
 static class CodeGenHelpers
 {
-	public const string CodeGenReplacementToken = "{{CodeGen}}";
-	public const string AttribCodeGenReplacementToken = "{{AttribCodeGen}}";
-	public const string NonClassCodeGenReplacementToken = "{{NonClassCodeGen}}";
+	public const string CodeGenReplacementToken = "//{{CodeGen}}";
+	public const string AttribCodeGenReplacementToken = "//{{AttribCodeGen}}";
+	public const string NonClassCodeGenReplacementToken = "//{{NonClassCodeGen}}";
 
 	const string EmbedAttributesHashDefineName = "ZODSHARP_ATTRIBUTES";
 
