@@ -8,7 +8,7 @@ public class UnionTests
 	public async Task Union_GivenT1Value_CreateStoresT1()
 	{
 		// Arrange
-		Union<string, int> union = Union<string, int>.Create("hello");
+		var union = Union<string, int>.Create("hello");
 
 		// Act
 		var isString = union.TryGetValue(out string? s);
@@ -25,7 +25,7 @@ public class UnionTests
 	public async Task Union_GivenT2Value_CreateStoresT2()
 	{
 		// Arrange
-		Union<string, int> union = Union<string, int>.Create(42);
+		var union = Union<string, int>.Create(42);
 
 		// Act
 		var isString = union.TryGetValue(out string? _);
@@ -140,7 +140,7 @@ public class UnionTests
 	public async Task Union3_GivenT3Value_StoresT3()
 	{
 		// Arrange
-		Union<string, int, bool> union = Union<string, int, bool>.Create(true);
+		var union = Union<string, int, bool>.Create(true);
 
 		// Act & Assert
 		await Assert.That(union.Tag).IsEqualTo(2);

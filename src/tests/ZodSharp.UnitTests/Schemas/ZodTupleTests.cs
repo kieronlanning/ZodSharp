@@ -9,7 +9,7 @@ public class ZodTupleTests
 		var schema = Z.Tuple(Z.String(), Z.Number().Min(0));
 
 		// Act
-		var result = schema.Validate(new object?[] { "hello", 42.0 });
+		var result = schema.Validate(["hello", 42.0]);
 
 		// Assert
 		await Assert.That(result.IsSuccess).IsTrue();
@@ -24,7 +24,7 @@ public class ZodTupleTests
 		var schema = Z.Tuple(Z.String(), Z.Number());
 
 		// Act
-		var result = schema.Validate(new object?[] { "hello" });
+		var result = schema.Validate(["hello"]);
 
 		// Assert
 		await Assert.That(result.IsSuccess).IsFalse();
@@ -38,7 +38,7 @@ public class ZodTupleTests
 		var schema = Z.Tuple(Z.String(), Z.Number());
 
 		// Act — first element is a number, not a string.
-		var result = schema.Validate(new object?[] { 42.0, 99.0 });
+		var result = schema.Validate([42.0, 99.0]);
 
 		// Assert
 		await Assert.That(result.IsSuccess).IsFalse();
@@ -52,7 +52,7 @@ public class ZodTupleTests
 		var schema = Z.Tuple(Z.String().Min(3), Z.Number().Min(0));
 
 		// Act — string too short, number negative.
-		var result = schema.Validate(new object?[] { "hi", -1.0 });
+		var result = schema.Validate(["hi", -1.0]);
 
 		// Assert
 		await Assert.That(result.IsSuccess).IsFalse();
@@ -66,7 +66,7 @@ public class ZodTupleTests
 		var schema = Z.Tuple(Z.String(), Z.Number(), Z.Boolean());
 
 		// Act
-		var result = schema.Validate(new object?[] { "hello", 42.0, true });
+		var result = schema.Validate(["hello", 42.0, true]);
 
 		// Assert
 		await Assert.That(result.IsSuccess).IsTrue();

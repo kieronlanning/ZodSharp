@@ -11,7 +11,13 @@ readonly record struct RegularExpressionAttributeData(
 	INamedTypeSymbol? ErrorMessageResourceType
 )
 {
-	public static readonly RegularExpressionAttributeData Empty = new(false, null, null, null, null);
+	public static readonly RegularExpressionAttributeData Empty = new(
+		false,
+		null,
+		null,
+		null,
+		null
+	);
 
 	public static RegularExpressionAttributeData FromAttributeData(
 		GenerationContext generationContext,
@@ -66,16 +72,29 @@ readonly record struct RegularExpressionAttributeData(
 					case nameof(ErrorMessage) when namedArg.Value.Value is string errorMsg:
 						errorMessage = errorMsg;
 						break;
-					case nameof(ErrorMessageResourceName) when namedArg.Value.Value is string resourceName:
+					case nameof(ErrorMessageResourceName)
+						when namedArg.Value.Value is string resourceName:
 						errorMessageResourceName = resourceName;
 						break;
-					case nameof(ErrorMessageResourceType) when namedArg.Value.Value is INamedTypeSymbol resourceType:
+					case nameof(ErrorMessageResourceType)
+						when namedArg.Value.Value is INamedTypeSymbol resourceType:
 						errorMessageResourceType = resourceType;
+						break;
+					default:
+						generationContext.Logger?.Warning(
+							$"Unexpected named argument '{namedArg.Key}' in {nameof(generationContext.RegularExpressionAttribute)}"
+						);
 						break;
 				}
 			}
 		}
 
-		return new(exists, pattern, errorMessage, errorMessageResourceName, errorMessageResourceType);
+		return new(
+			exists,
+			pattern,
+			errorMessage,
+			errorMessageResourceName,
+			errorMessageResourceType
+		);
 	}
 }

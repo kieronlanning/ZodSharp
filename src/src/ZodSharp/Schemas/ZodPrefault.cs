@@ -24,6 +24,7 @@ public class ZodPrefault<T>(IZodSchema<T, T> innerSchema, T prefaultValue) : Zod
 	/// </summary>
 	/// <param name="value">The value to validate.</param>
 	/// <returns>A validation result.</returns>
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0370:Suppression is unnecessary")]
 	protected override ValidationResult<T> ParseInternal(T value)
 	{
 		var effective = EqualityComparer<T>.Default.Equals(value, default!) ? prefaultValue : value;

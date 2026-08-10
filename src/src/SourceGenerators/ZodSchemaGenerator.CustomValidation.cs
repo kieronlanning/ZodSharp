@@ -12,7 +12,10 @@ partial class ZodSchemaGenerator
 	/// <summary>
 	/// Finds the <c>[ZodSchema]</c> attribute on the given class symbol.
 	/// </summary>
-	static AttributeData? GetZodSchemaAttribute(INamedTypeSymbol classSymbol, GenerationContext generationContext)
+	static AttributeData? GetZodSchemaAttribute(
+		INamedTypeSymbol classSymbol,
+		GenerationContext generationContext
+	)
 	{
 		if (generationContext.ZodSchemaAttribute is null)
 			return null;
@@ -45,7 +48,9 @@ partial class ZodSchemaGenerator
 		GenerationContext generationContext
 	)
 	{
-		var configuredName = zodSchemaAttribute is not null ? GetCustomValidationMethodName(zodSchemaAttribute) : null;
+		var configuredName = zodSchemaAttribute is not null
+			? GetCustomValidationMethodName(zodSchemaAttribute)
+			: null;
 		var isExplicitlyConfigured = !string.IsNullOrEmpty(configuredName);
 
 		var methodName = string.IsNullOrWhiteSpace(configuredName)
@@ -75,12 +80,6 @@ partial class ZodSchemaGenerator
 
 		// Discover candidate methods declared directly on the type (not inherited).
 		var candidates = GetMethodsByName(classSymbol, methodName);
-
-		generationContext.Logger?.Info(
-			$"CustomValidation: method='{methodName}', configured={isExplicitlyConfigured}, candidates={candidates.Count}",
-			1
-		);
-
 		var validationMethodClassSymbol = classSymbol;
 		if (candidates.Count == 0)
 		{
@@ -121,7 +120,10 @@ partial class ZodSchemaGenerator
 			candidates = c;
 		}
 
-		var invocationKind = SymbolEqualityComparer.Default.Equals(validationMethodClassSymbol, classSymbol)
+		var invocationKind = SymbolEqualityComparer.Default.Equals(
+			validationMethodClassSymbol,
+			classSymbol
+		)
 			? CustomValidationInvocationKind.StaticOnModelType
 			: CustomValidationInvocationKind.DefinedOnSchemaValidator;
 
@@ -168,7 +170,9 @@ partial class ZodSchemaGenerator
 				[
 					DiagnosticInfo.Create(
 						GeneratorDiagnostics.CustomValidationAmbiguousOverloads,
-						validCandidates[0].Locations.Length > 0 ? validCandidates[0].Locations[0] : null,
+						validCandidates[0].Locations.Length > 0
+							? validCandidates[0].Locations[0]
+							: null,
 						methodName,
 						classSymbol.Name
 					),
@@ -192,9 +196,13 @@ partial class ZodSchemaGenerator
 		string validationMethodName
 	)
 	{
-		var schemaSymbol = classSymbol
-			.ContainingNamespace.GetTypeMembers($"{classSymbol.Name}SchemaValidator")
-			.FirstOrDefault();
+		var schemaSymbol = classSymbol.ContainingType is not null
+			? classSymbol
+				.ContainingType.GetTypeMembers($"{classSymbol.Name}SchemaValidator")
+				.FirstOrDefault()
+			: classSymbol
+				.ContainingNamespace.GetTypeMembers($"{classSymbol.Name}SchemaValidator")
+				.FirstOrDefault();
 		if (schemaSymbol == null)
 			return (null, []);
 
@@ -213,18 +221,25 @@ partial class ZodSchemaGenerator
 	{
 		foreach (var namedArg in attributeData.NamedArguments)
 		{
-			if (namedArg.Key == CustomValidationMethodNameProperty && namedArg.Value.Value is string name)
+			if (
+				namedArg.Key == CustomValidationMethodNameProperty
+				&& namedArg.Value.Value is string name
+			)
 				return name;
 		}
 
 		return null;
 	}
 
-	static Location? GetAttributeLocation(AttributeData? attributeData, INamedTypeSymbol classSymbol)
+	static Location? GetAttributeLocation(
+		AttributeData? attributeData,
+		INamedTypeSymbol classSymbol
+	)
 	{
 		if (attributeData?.ApplicationSyntaxReference?.GetSyntax() is { } syntax)
 			return syntax.GetLocation();
 
+		// Fallback: return the first location of the class symbol (e.g. the class declaration).
 		return classSymbol.Locations.Length > 0 ? classSymbol.Locations[0] : null;
 	}
 
@@ -367,7 +382,10 @@ partial class ZodSchemaGenerator
 		var secondParam = method.Parameters[1];
 		if (
 			generationContext.CancellationToken is not null
-			&& !comparer.Equals(TypeHelpers.UnwrapNullableType(secondParam.Type), generationContext.CancellationToken)
+			&& !comparer.Equals(
+				TypeHelpers.UnwrapNullableType(secondParam.Type),
+				generationContext.CancellationToken
+			)
 		)
 		{
 			diagnostics.Add(
@@ -381,8 +399,11 @@ partial class ZodSchemaGenerator
 		}
 
 		// Return type must be ValueTask<ValidationResult<T>>.
-		var expectedReturnType = GetExpectedReturnType(validationClassSymbol, generationContext);
-		if (expectedReturnType is not null && !comparer.Equals(method.ReturnType, expectedReturnType))
+		var expectedReturnType = GetExpectedReturnType(classSymbol, generationContext);
+		if (
+			expectedReturnType is not null
+			&& !comparer.Equals(method.ReturnType, expectedReturnType)
+		)
 		{
 			diagnostics.Add(
 				DiagnosticInfo.Create(
@@ -418,7 +439,10 @@ partial class ZodSchemaGenerator
 	/// Constructs the expected <c>ValueTask&lt;ValidationResult&lt;T&gt;&gt;</c> symbol
 	/// from the compilation's framework symbols.
 	/// </summary>
-	static INamedTypeSymbol? GetExpectedReturnType(INamedTypeSymbol classSymbol, GenerationContext generationContext)
+	static INamedTypeSymbol? GetExpectedReturnType(
+		INamedTypeSymbol classSymbol,
+		GenerationContext generationContext
+	)
 	{
 		if (generationContext.ValueTaskOfT is null || generationContext.ValidationResult is null)
 			return null;

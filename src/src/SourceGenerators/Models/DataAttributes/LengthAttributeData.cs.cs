@@ -12,7 +12,14 @@ readonly record struct LengthAttributeData(
 	INamedTypeSymbol? ErrorMessageResourceType
 )
 {
-	public static readonly LengthAttributeData Empty = new(false, 0, int.MaxValue, null, null, null);
+	public static readonly LengthAttributeData Empty = new(
+		false,
+		0,
+		int.MaxValue,
+		null,
+		null,
+		null
+	);
 
 	public static LengthAttributeData FromAttributeData(
 		GenerationContext generationContext,
@@ -39,9 +46,7 @@ readonly record struct LengthAttributeData(
 	)
 	{
 		if (generationContext is null)
-		{
 			throw new ArgumentNullException(nameof(generationContext));
-		}
 
 		var attributeSymbol = generationContext.LengthAttribute;
 
@@ -68,12 +73,19 @@ readonly record struct LengthAttributeData(
 					errorMessage = message;
 					break;
 
-				case nameof(ErrorMessageResourceName) when namedArgument.Value.Value is string resourceName:
+				case nameof(ErrorMessageResourceName)
+					when namedArgument.Value.Value is string resourceName:
 					errorMessageResourceName = resourceName;
 					break;
 
-				case nameof(ErrorMessageResourceType) when namedArgument.Value.Value is INamedTypeSymbol resourceType:
+				case nameof(ErrorMessageResourceType)
+					when namedArgument.Value.Value is INamedTypeSymbol resourceType:
 					errorMessageResourceType = resourceType;
+					break;
+				default:
+					generationContext.Logger?.Warning(
+						$"Unexpected named argument '{namedArgument.Key}' in {nameof(generationContext.LengthAttribute)}"
+					);
 					break;
 			}
 		}

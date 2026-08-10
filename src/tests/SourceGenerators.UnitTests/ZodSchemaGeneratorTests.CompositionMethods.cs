@@ -1,11 +1,11 @@
-using ZodSharp.Core;
-
 namespace ZodSharp.SourceGenerators;
 
 partial class ZodSchemaGeneratorTests
 {
 	[Test]
-	public async Task CompositionMethods_GeneratedAsApplyNamedOverloads(CancellationToken cancellationToken)
+	public async Task CompositionMethods_GeneratedAsApplyNamedOverloads(
+		CancellationToken cancellationToken
+	)
 	{
 		// Arrange
 		const string source =
@@ -21,12 +21,13 @@ namespace Testing
 ";
 
 		// Act
-		var (result, outputCompilation) = await GenerateAsync(source, cancellationToken);
-		var generatedSource = GetSchemaGeneratedSource(result, "ComposeModelSchema");
+		var driverResult = await GenerateAsync(source, cancellationToken);
+		var generatedSource = GetSchemaGeneratedSource(driverResult, "ComposeModelSchema");
 
 		// Assert — the renamed value-first composition methods are emitted.
-		await AssertNoGeneratorExceptions(result);
-		await AssertNoCompilationErrors(outputCompilation, cancellationToken);
+		await AssertNoGeneratorExceptions(driverResult);
+		await AssertNoCompilationErrors(driverResult, cancellationToken);
+
 		await Assert.That(generatedSource).Contains("ApplyAnd");
 		await Assert.That(generatedSource).Contains("ApplyOr");
 		await Assert.That(generatedSource).Contains("ApplyRefine");
@@ -35,7 +36,9 @@ namespace Testing
 	}
 
 	[Test]
-	public async Task CompositionMethods_GivenValidValue_ApplyRefineSucceeds(CancellationToken cancellationToken)
+	public async Task CompositionMethods_GivenValidValue_ApplyRefineSucceeds(
+		CancellationToken cancellationToken
+	)
 	{
 		// Arrange
 		const string source =
@@ -51,7 +54,9 @@ namespace Testing
 ";
 
 		// Act
-		var assembly = await CompileToAssemblyAsync(source, cancellationToken);
+		var driverResult = await GenerateAsync(source, cancellationToken);
+		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
+
 		var modelType = assembly.GetType("Testing.RefineModel")!;
 		var schemaType = assembly.GetType("Testing.RefineModelSchema")!;
 
@@ -59,7 +64,10 @@ namespace Testing
 		modelType.GetProperty("Age")!.SetValue(instance, 21);
 
 		var refineMethod = schemaType.GetMethod("ApplyRefine")!;
-		var result = refineMethod.Invoke(null, [instance, (System.Func<dynamic, bool>)(m => m.Age >= 18), null])!;
+		var result = refineMethod.Invoke(
+			null,
+			[instance, (Func<dynamic, bool>)(static m => m.Age >= 18), null]
+		)!;
 
 		// Assert
 		var isSuccess = (bool)result.GetType().GetProperty("IsSuccess")!.GetValue(result)!;
@@ -100,7 +108,8 @@ namespace Testing
 
 		// Act — compile and invoke, proving the generated validator can be cast to
 		// IZodSchema<T> and used in the composition API.
-		var assembly = await CompileToAssemblyAsync(source, cancellationToken);
+		var driverResult = await GenerateAsync(source, cancellationToken);
+		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		// Assert
 		var helper = assembly.GetType("Testing.CompositionUser")!;

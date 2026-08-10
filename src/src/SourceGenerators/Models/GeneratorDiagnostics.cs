@@ -9,9 +9,9 @@ static class GeneratorDiagnostics
 
 	public static readonly DiagnosticDescriptor UnhandledException = new(
 		id: "ZODSGEN001",
-		title: "Fatal error",
-		messageFormat: "This is effectively a fatal incident where the source generator has failed",
-		category: Category,
+		title: "Unhandled exception",
+		messageFormat: "Source generator failed for {0}: {1}",
+		category: "ZodSharp.SourceGenerator",
 		defaultSeverity: DiagnosticSeverity.Error,
 		isEnabledByDefault: true
 	);

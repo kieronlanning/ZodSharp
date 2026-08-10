@@ -11,6 +11,9 @@ namespace ZodSharp.Schemas;
 /// Initializes a new instance of the ZodObject class.
 /// </remarks>
 /// <param name="shape">The object shape (property schemas)</param>
+/// <param name="unknownKeyPolicy">How unknown keys are handled.</param>
+/// <param name="optionalKeys">Optional field names.</param>
+/// <param name="catchallSchema">Schema for unknown keys.</param>
 public class ZodObject(
 	ImmutableDictionary<string, IZodSchema<object, object>> shape,
 	UnknownKeyPolicy unknownKeyPolicy = UnknownKeyPolicy.Strip,
@@ -45,7 +48,9 @@ public class ZodObject(
 	/// </summary>
 	/// <param name="value">The value to validate</param>
 	/// <returns>A validation result</returns>
-	protected override ValidationResult<Dictionary<string, object?>> ParseInternal(Dictionary<string, object?> value)
+	protected override ValidationResult<Dictionary<string, object?>> ParseInternal(
+		Dictionary<string, object?> value
+	)
 	{
 		if (value == null)
 		{
@@ -63,7 +68,13 @@ public class ZodObject(
 			if (!value.TryGetValue(key, out var propertyValue))
 			{
 				if (!IsOptional(key))
-					errors.Add(new ValidationError("missing_field", $"Required field '{key}' is missing", [key]));
+					errors.Add(
+						new ValidationError(
+							"missing_field",
+							$"Required field '{key}' is missing",
+							[key]
+						)
+					);
 				continue;
 			}
 
@@ -112,17 +123,25 @@ public class ZodObject(
 			}
 			else
 			{
+#pragma warning disable IDE0010 // Add missing cases
 				switch (unknownKeyPolicy)
 				{
 					case UnknownKeyPolicy.Passthrough:
 						validatedObject[key] = propertyValue;
 						break;
 					case UnknownKeyPolicy.Strict:
-						errors.Add(new ValidationError("unrecognized_key", $"Unrecognized key '{key}'", [key]));
+						errors.Add(
+							new ValidationError(
+								"unrecognized_key",
+								$"Unrecognized key '{key}'",
+								[key]
+							)
+						);
 						break;
 					default:
 						break;
 				}
+#pragma warning restore IDE0010 // Add missing cases
 			}
 		}
 
@@ -213,7 +232,7 @@ public class ZodObject(
 	/// are allowed). Equivalent to Zod's <c>.partial()</c>.
 	/// </summary>
 	/// <returns>A new <see cref="ZodObject"/> with all keys optional.</returns>
-	public ZodObject Partial() => new(shape, unknownKeyPolicy, shape.Keys.ToImmutableHashSet(), catchallSchema);
+	public ZodObject Partial() => new(shape, unknownKeyPolicy, [.. shape.Keys], catchallSchema);
 
 	/// <summary>
 	/// Creates a new <see cref="ZodObject"/> where all fields are required (no optional keys).
@@ -226,7 +245,8 @@ public class ZodObject(
 	/// Creates a new <see cref="ZodObject"/> that keeps unknown keys in the output.
 	/// Equivalent to Zod's <c>.passthrough()</c>.
 	/// </summary>
-	public ZodObject Passthrough() => new(shape, UnknownKeyPolicy.Passthrough, optionalKeys, catchallSchema);
+	public ZodObject Passthrough() =>
+		new(shape, UnknownKeyPolicy.Passthrough, optionalKeys, catchallSchema);
 
 	/// <summary>
 	/// Creates a new <see cref="ZodObject"/> that rejects unknown keys with an error.
@@ -248,8 +268,8 @@ public class ZodObject(
 	/// <param name="schema">The catchall schema for unknown keys.</param>
 	public ZodObject Catchall(IZodSchema<object, object> schema)
 	{
-		if (schema is null)
-			throw new ArgumentNullException(nameof(schema));
-		return new ZodObject(shape, unknownKeyPolicy, optionalKeys, schema);
+		return schema is null
+			? throw new ArgumentNullException(nameof(schema))
+			: new ZodObject(shape, unknownKeyPolicy, optionalKeys, schema);
 	}
 }

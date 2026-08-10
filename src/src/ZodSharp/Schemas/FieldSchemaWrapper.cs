@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using ZodSharp.Core;
 
 namespace ZodSharp.Schemas;
@@ -11,7 +12,13 @@ namespace ZodSharp.Schemas;
 public sealed class FieldSchemaWrapper<T>(IZodSchema<T, T> inner) : IZodSchema<object, object>
 {
 	/// <summary>Wraps a typed schema into an untyped schema.</summary>
-	public static IZodSchema<object, object> Wrap(IZodSchema<T, T> schema) => new FieldSchemaWrapper<T>(schema);
+	[SuppressMessage(
+		"Design",
+		"CA1000",
+		Justification = "Factory method is intentionally placed on the generic wrapper type."
+	)]
+	public static IZodSchema<object, object> Wrap(IZodSchema<T, T> schema) =>
+		new FieldSchemaWrapper<T>(schema);
 
 	/// <inheritdoc/>
 	public ValidationResult<object> Validate(object value)

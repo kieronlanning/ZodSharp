@@ -12,7 +12,14 @@ readonly record struct StringLengthAttribute(
 	INamedTypeSymbol? ErrorMessageResourceType
 )
 {
-	public static readonly StringLengthAttribute Empty = new(false, int.MaxValue, 0, null, null, null);
+	public static readonly StringLengthAttribute Empty = new(
+		false,
+		int.MaxValue,
+		0,
+		null,
+		null,
+		null
+	);
 
 	public static StringLengthAttribute FromAttributeData(
 		GenerationContext generationContext,
@@ -53,7 +60,10 @@ readonly record struct StringLengthAttribute(
 		string? errorMessageResourceName = null;
 		INamedTypeSymbol? errorMessageResourceType = null;
 
-		if (attributeData.ConstructorArguments.Length > 0 && attributeData.ConstructorArguments[0].Value is int maximum)
+		if (
+			attributeData.ConstructorArguments.Length > 0
+			&& attributeData.ConstructorArguments[0].Value is int maximum
+		)
 		{
 			maximumLength = maximum;
 		}
@@ -70,12 +80,19 @@ readonly record struct StringLengthAttribute(
 					errorMessage = message;
 					break;
 
-				case nameof(ErrorMessageResourceName) when namedArgument.Value.Value is string resourceName:
+				case nameof(ErrorMessageResourceName)
+					when namedArgument.Value.Value is string resourceName:
 					errorMessageResourceName = resourceName;
 					break;
 
-				case nameof(ErrorMessageResourceType) when namedArgument.Value.Value is INamedTypeSymbol resourceType:
+				case nameof(ErrorMessageResourceType)
+					when namedArgument.Value.Value is INamedTypeSymbol resourceType:
 					errorMessageResourceType = resourceType;
+					break;
+				default:
+					generationContext.Logger?.Warning(
+						$"Unexpected named argument '{namedArgument.Key}' in {nameof(generationContext.StringLengthAttribute)}"
+					);
 					break;
 			}
 		}

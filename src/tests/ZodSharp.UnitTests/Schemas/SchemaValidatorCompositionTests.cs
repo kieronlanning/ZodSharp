@@ -2,6 +2,11 @@ using ZodSharp.Core;
 
 namespace ZodSharp.Schemas;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage(
+	"Style",
+	"IDE0004:Remove Unnecessary Cast",
+	Justification = "Explicit testing"
+)]
 public class SchemaValidatorCompositionTests
 {
 	[Test]

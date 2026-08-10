@@ -3,7 +3,9 @@ using System.Collections.Immutable;
 
 namespace ZodSharp.SourceGenerators.Models;
 
-readonly struct EquatableArray<T>(ImmutableArray<T> array) : IEquatable<EquatableArray<T>>, IEnumerable<T>
+readonly struct EquatableArray<T>(ImmutableArray<T> array)
+	: IEquatable<EquatableArray<T>>,
+		IEnumerable<T>
 	where T : IEquatable<T>
 {
 	public static readonly EquatableArray<T> Empty = new([]);
@@ -20,7 +22,8 @@ readonly struct EquatableArray<T>(ImmutableArray<T> array) : IEquatable<Equatabl
 
 	public static EquatableArray<T> Create(params T[] items) => new(ImmutableArray.Create(items));
 
-	public bool Equals(EquatableArray<T> other) => AsImmutableArray().SequenceEqual(other.AsImmutableArray());
+	public bool Equals(EquatableArray<T> other) =>
+		AsImmutableArray().SequenceEqual(other.AsImmutableArray());
 
 	public override bool Equals(object? obj) => obj is EquatableArray<T> other && Equals(other);
 
@@ -32,7 +35,7 @@ readonly struct EquatableArray<T>(ImmutableArray<T> array) : IEquatable<Equatabl
 		{
 			var hash = 17;
 			foreach (var item in AsImmutableArray())
-				hash = hash * 31 + (item?.GetHashCode() ?? 0);
+				hash = (hash * 31) + (item?.GetHashCode() ?? 0);
 			return hash;
 		}
 	}
@@ -43,9 +46,12 @@ readonly struct EquatableArray<T>(ImmutableArray<T> array) : IEquatable<Equatabl
 
 	public static implicit operator EquatableArray<T>(ImmutableArray<T> array) => new(array);
 
-	public static implicit operator ImmutableArray<T>(EquatableArray<T> array) => array.AsImmutableArray();
+	public static implicit operator ImmutableArray<T>(EquatableArray<T> array) =>
+		array.AsImmutableArray();
 
-	public static bool operator ==(EquatableArray<T> left, EquatableArray<T> right) => left.Equals(right);
+	public static bool operator ==(EquatableArray<T> left, EquatableArray<T> right) =>
+		left.Equals(right);
 
-	public static bool operator !=(EquatableArray<T> left, EquatableArray<T> right) => !left.Equals(right);
+	public static bool operator !=(EquatableArray<T> left, EquatableArray<T> right) =>
+		!left.Equals(right);
 }

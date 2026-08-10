@@ -29,9 +29,8 @@ public class ZodPipe<TSourceOutput, TTargetOutput>(
 	protected override ValidationResult<TTargetOutput> ParseInternal(TSourceOutput value)
 	{
 		var sourceResult = source.Validate(value);
-		if (!sourceResult.IsSuccess)
-			return ValidationResult<TTargetOutput>.Failure(sourceResult.Errors);
-
-		return target.Validate(sourceResult.Value!);
+		return sourceResult.IsSuccess
+			? target.Validate(sourceResult.Value!)
+			: ValidationResult<TTargetOutput>.Failure(sourceResult.Errors);
 	}
 }

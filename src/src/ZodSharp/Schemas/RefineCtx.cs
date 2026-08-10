@@ -9,31 +9,25 @@ namespace ZodSharp.Schemas;
 /// to emit multiple, path-located issues rather than a single boolean verdict.
 /// </summary>
 /// <typeparam name="T">The type being validated.</typeparam>
-public sealed class RefineCtx<T>
+/// <remarks>
+/// Initializes a new instance of the <see cref="RefineCtx{T}"/> class with the
+/// value under validation and an optional base path.
+/// </remarks>
+/// <param name="value">The validated value.</param>
+/// <param name="path">The base path prepended to any added issues.</param>
+public sealed class RefineCtx<T>(T value, ImmutableArray<string> path)
 {
 	readonly List<ValidationError> _issues = [];
 
 	/// <summary>
-	/// Initializes a new instance of the <see cref="RefineCtx{T}"/> class with the
-	/// value under validation and an optional base path.
-	/// </summary>
-	/// <param name="value">The validated value.</param>
-	/// <param name="path">The base path prepended to any added issues.</param>
-	public RefineCtx(T value, ImmutableArray<string> path)
-	{
-		Value = value;
-		Path = path;
-	}
-
-	/// <summary>
 	/// The value being validated.
 	/// </summary>
-	public T Value { get; }
+	public T Value { get; } = value;
 
 	/// <summary>
 	/// The base path under which issues are reported.
 	/// </summary>
-	public ImmutableArray<string> Path { get; }
+	public ImmutableArray<string> Path { get; } = path;
 
 	/// <summary>
 	/// The issues added by the refinement so far.
@@ -57,7 +51,10 @@ public sealed class RefineCtx<T>
 		if (string.IsNullOrWhiteSpace(code))
 			throw new ArgumentException("Issue code must not be null or whitespace.", nameof(code));
 		if (string.IsNullOrWhiteSpace(message))
-			throw new ArgumentException("Issue message must not be null or whitespace.", nameof(message));
+			throw new ArgumentException(
+				"Issue message must not be null or whitespace.",
+				nameof(message)
+			);
 
 		var fullPath = BuildPath(Path, path);
 		_issues.Add(new ValidationError(code, message, fullPath));
@@ -69,7 +66,8 @@ public sealed class RefineCtx<T>
 	/// </summary>
 	/// <param name="message">The human-readable issue message.</param>
 	/// <param name="path">An optional relative path appended to <see cref="Path"/>.</param>
-	public void AddIssue(string message, string[]? path = null) => AddIssue("refinement_failed", message, path);
+	public void AddIssue(string message, string[]? path = null) =>
+		AddIssue("refinement_failed", message, path);
 
 	static string[] BuildPath(ImmutableArray<string> basePath, string[]? relativePath)
 	{

@@ -3,7 +3,11 @@ using Microsoft.CodeAnalysis;
 
 namespace ZodSharp.SourceGenerators.Models.DataAttributes;
 
-readonly record struct RequiredAttributeData(bool Exists, bool AllowEmptyStrings, string? ErrorMessage)
+readonly record struct RequiredAttributeData(
+	bool Exists,
+	bool AllowEmptyStrings,
+	string? ErrorMessage
+)
 {
 	public static readonly RequiredAttributeData Empty = new(false, false, null);
 
@@ -33,16 +37,25 @@ readonly record struct RequiredAttributeData(bool Exists, bool AllowEmptyStrings
 		var attributeSymbol = generationContext.RequiredAttribute;
 		var exists =
 			attributeSymbol is not null
-			&& SymbolEqualityComparer.Default.Equals(attributeData?.AttributeClass, attributeSymbol);
+			&& SymbolEqualityComparer.Default.Equals(
+				attributeData?.AttributeClass,
+				attributeSymbol
+			);
 		var allowEmptyStrings = false;
 		var errorMessage = (string?)null;
 		if (exists)
 		{
 			foreach (var namedArg in attributeData!.NamedArguments)
 			{
-				if (namedArg.Key == nameof(AllowEmptyStrings) && namedArg.Value.Value is bool allowEmpty)
+				if (
+					namedArg.Key == nameof(AllowEmptyStrings)
+					&& namedArg.Value.Value is bool allowEmpty
+				)
 					allowEmptyStrings = allowEmpty;
-				else if (namedArg.Key == nameof(ErrorMessage) && namedArg.Value.Value is string errorMsg)
+				else if (
+					namedArg.Key == nameof(ErrorMessage)
+					&& namedArg.Value.Value is string errorMsg
+				)
 					errorMessage = errorMsg;
 			}
 		}

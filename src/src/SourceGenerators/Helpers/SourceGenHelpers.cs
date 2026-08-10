@@ -1,7 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using ZodSharp.SourceGenerators.Models;
 
 namespace ZodSharp.SourceGenerators.Helpers;
 
@@ -14,11 +13,15 @@ static class SourceGenHelpers
 	{
 		var isDisabledValueProvider = IsSourceGeneratorDisabledValueProvider(context, logger);
 		var generationContextValueProvider = GetGeneratorValueProvider(context, logger);
-		var zodSchemaValueProvider = GetGenerationValueProviders(context, TypeHelpers.ZodSchemaAttribute, logger);
+		var zodSchemaValueProvider = GetGenerationValueProviders(
+			context,
+			TypeLibrary.ZodSchemaAttribute,
+			logger
+		);
 
 		return isDisabledValueProvider
-			.Combine(generationContextValueProvider) // (bool, GenerationContext)
-			.Combine(zodSchemaValueProvider.Collect()) // ((bool, GenerationContext), ImmutableArray<T>)
+			.Combine(generationContextValueProvider)
+			.Combine(zodSchemaValueProvider.Collect())
 			.Select(
 				static (nested, _) =>
 				{
@@ -35,12 +38,18 @@ static class SourceGenHelpers
 			);
 	}
 
-	static IncrementalValuesProvider<GeneratorResult<TargetSymbolDescriptor>> GetGenerationValueProviders(
+	static IncrementalValuesProvider<
+		GeneratorResult<TargetSymbolDescriptor>
+	> GetGenerationValueProviders(
 		IncrementalGeneratorInitializationContext context,
 		string fullAttributeName,
 		GenerationLogger? logger
 	)
 	{
+		logger?.Debug(
+			$"GetGenerationValueProviders: Looking for symbols with attribute {fullAttributeName}"
+		);
+
 		// Create a syntax provider that finds classes with the specified attribute.
 		var targetSymbols = context
 			.SyntaxProvider.ForAttributeWithMetadataName(
@@ -63,7 +72,10 @@ static class SourceGenHelpers
 		)
 		{
 			var declaration = (TypeDeclarationSyntax)context.TargetNode;
-			if (context.SemanticModel.GetDeclaredSymbol(declaration, cancellationToken) is not INamedTypeSymbol symbol)
+			if (
+				context.SemanticModel.GetDeclaredSymbol(declaration, cancellationToken)
+				is not INamedTypeSymbol symbol
+			)
 				return GeneratorResult<TargetSymbolDescriptor>.Empty;
 
 			TargetSymbolDescriptor result = new(symbol, declaration);
@@ -80,7 +92,8 @@ static class SourceGenHelpers
 		// Collect the generation context, which includes references to required attributes and the logger
 		var generationContextValueProvider = context
 			.CompilationProvider.Select(
-				(compilation, cancellationToken) => GenerationContext.Create(compilation, logger, cancellationToken)
+				(compilation, cancellationToken) =>
+					GenerationContext.Create(compilation, logger, cancellationToken)
 			)
 			.WithTrackingName("GetGenerationContext");
 
@@ -97,11 +110,16 @@ static class SourceGenHelpers
 			.AnalyzerConfigOptionsProvider.Select(
 				(opts, _) =>
 				{
-					opts.GlobalOptions.TryGetValue(TypeHelpers.DisableZodSharpSourceGeneratorProperty, out var val);
+					opts.GlobalOptions.TryGetValue(
+						DisableZodSharpSourceGeneratorProperty,
+						out var val
+					);
 					if (bool.TryParse(val, out var isDisabled))
 					{
 						if (isDisabled)
-							logger?.Info("ZodSharp source generators are disabled via MSBuild property");
+							logger?.Info(
+								"ZodSharp source generators are disabled via MSBuild property"
+							);
 					}
 
 					return isDisabled;

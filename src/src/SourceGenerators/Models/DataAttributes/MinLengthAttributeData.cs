@@ -51,14 +51,20 @@ readonly record struct MinLengthAttributeData(
 		string? errorMessageResourceName = null;
 		INamedTypeSymbol? errorMessageResourceType = null;
 
-		if (attributeData.ConstructorArguments.Length == 1 && attributeData.ConstructorArguments[0].Value is int value)
+		if (
+			attributeData.ConstructorArguments.Length == 1
+			&& attributeData.ConstructorArguments[0].Value is int value
+		)
 		{
 			length = value;
 		}
 
 		foreach (var namedArgument in attributeData.NamedArguments)
 		{
-			if (namedArgument.Key == nameof(ErrorMessage) && namedArgument.Value.Value is string message)
+			if (
+				namedArgument.Key == nameof(ErrorMessage)
+				&& namedArgument.Value.Value is string message
+			)
 			{
 				errorMessage = message;
 			}

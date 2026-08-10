@@ -1,6 +1,5 @@
 using Microsoft.CodeAnalysis;
 using ZodSharp.SourceGenerators.Helpers;
-using ZodSharp.SourceGenerators.Templates;
 
 namespace ZodSharp.SourceGenerators;
 
@@ -9,10 +8,8 @@ namespace ZodSharp.SourceGenerators;
 /// Uses IIncrementalGenerator for better performance and incremental compilation support.
 /// </summary>
 [Generator]
-public sealed partial class ZodSchemaGenerator : IIncrementalGenerator, ILogSupport
+public sealed partial class ZodSchemaGenerator : IIncrementalGenerator
 {
-	GenerationLogger? _logger;
-
 	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
 		context.RegisterPostInitializationOutput(static ctx =>
@@ -28,7 +25,10 @@ public sealed partial class ZodSchemaGenerator : IIncrementalGenerator, ILogSupp
 			);
 		});
 
-		var generationValueProviders = SourceGenHelpers.GetGeneratorValueProviders(context, _logger);
+		var generationValueProviders = SourceGenHelpers.GetGeneratorValueProviders(
+			context,
+			_logger
+		);
 
 		// Register source outputs
 		context.RegisterSourceOutput(
@@ -47,8 +47,18 @@ public sealed partial class ZodSchemaGenerator : IIncrementalGenerator, ILogSupp
 
 					if (schema.IsFatal)
 						return;
+				}
 
-					Execute(schema.Value!, source.GenerationContext, spc);
+				var primarySchemas = source
+					.ZodSchemas.Where(static s => s.IsSuccess && s.Value is not null)
+					.Select(static s => s.Value!)
+					.ToList();
+
+				var allSchemas = DiscoverAllSchemas(primarySchemas, source.GenerationContext);
+
+				foreach (var (descriptor, isPrimary) in allSchemas)
+				{
+					Execute(descriptor, source.GenerationContext, spc, isPrimary);
 				}
 			}
 		);

@@ -51,14 +51,7 @@ public class ZodCatchTests
 	{
 		// Arrange
 		var invoked = false;
-		var schema = Z.String()
-			.Min(1)
-			.Catch(
-				static (v, _) =>
-				{
-					return $"fallback-{v}";
-				}
-			);
+		var schema = Z.String().Min(1).Catch(static (v, _) => $"fallback-{v}");
 
 		// Act
 		var result = schema.Validate("ok");

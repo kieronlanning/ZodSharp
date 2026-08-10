@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Microsoft.CodeAnalysis;
 using ZodSharp.SourceGenerators.Helpers;
 using ZodSharp.SourceGenerators.Models;
@@ -21,12 +21,6 @@ partial class ZodSchemaGenerator
 
 	static void ReportDiagnostics(
 		SourceProductionContext context,
-		DiagnosticInfo diagnostic,
-		GenerationLogger? logger
-	) => ReportDiagnostics(context, [diagnostic], logger);
-
-	static void ReportDiagnostics(
-		SourceProductionContext context,
 		IEnumerable<DiagnosticInfo> diagnostics,
 		GenerationLogger? logger
 	)
@@ -39,6 +33,4 @@ partial class ZodSchemaGenerator
 			logger?.Diagnostic(diagnostic.GetMessage(CultureInfo.InvariantCulture));
 		}
 	}
-
-	void ILogSupport.SetLogOutput(Action<string, OutputType> action) => _logger = new GenerationLogger(action);
 }

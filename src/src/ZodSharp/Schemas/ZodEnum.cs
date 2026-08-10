@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using ZodSharp.Core;
 
 namespace ZodSharp.Schemas;
@@ -10,6 +11,7 @@ namespace ZodSharp.Schemas;
 /// Initializes a new instance of the <see cref="ZodEnum"/> class.
 /// </remarks>
 /// <param name="allowedValues">The allowed string values.</param>
+[SuppressMessage("Naming", "CA1711", Justification = "Name mirrors Zod's z.enum API.")]
 public class ZodEnum(HashSet<string> allowedValues) : ZodType<string>
 {
 	static readonly string[] EmptyPath = [];
@@ -33,6 +35,7 @@ public class ZodEnum(HashSet<string> allowedValues) : ZodType<string>
 			);
 		}
 
+		// Check if the value is in the allowed values set
 		return allowedValues.Contains(value)
 			? ValidationResult<string>.Success(value)
 			: ValidationResult<string>.Failure(

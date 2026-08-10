@@ -12,7 +12,7 @@ public interface IZodSchemaValidator { }
 
 /// <summary>
 /// Type-safe validator contract usable from DI. Mirrors IZodSchema.Validate.
-/// Also extends IZodSchema<T> so that generated *SchemaValidator adapters can
+/// Also extends IZodSchema&lt;T&gt; so that generated *SchemaValidator adapters can
 /// participate in the full schema composition API (.And(), .Or(), .Pipe(), etc.).
 /// </summary>
 /// <typeparam name="T">The validated value type.</typeparam>
@@ -23,7 +23,7 @@ public interface IZodSchemaValidator<T> : IZodSchemaValidator, IZodSchema<T>
 	/// </summary>
 	/// <param name="value">The value to validate.</param>
 	/// <returns>A validation result containing the validated value or errors.</returns>
-	ValidationResult<T> Validate(T value);
+	new ValidationResult<T> Validate(T value);
 
 	/// <summary>
 	/// Validates the input value asynchronously and returns a validation result.
@@ -31,5 +31,8 @@ public interface IZodSchemaValidator<T> : IZodSchemaValidator, IZodSchema<T>
 	/// <param name="value">The value to validate.</param>
 	/// <param name="cancellationToken"></param>
 	/// <returns>A task that completes with a validation result.</returns>
-	ValueTask<ValidationResult<T>> ValidateAsync(T value, CancellationToken cancellationToken = default);
+	new ValueTask<ValidationResult<T>> ValidateAsync(
+		T value,
+		CancellationToken cancellationToken = default
+	);
 }

@@ -58,11 +58,18 @@ readonly record struct DeniedValuesAttributeData(
 				case nameof(ErrorMessage) when namedArgument.Value.Value is string message:
 					errorMessage = message;
 					break;
-				case nameof(ErrorMessageResourceName) when namedArgument.Value.Value is string resourceName:
+				case nameof(ErrorMessageResourceName)
+					when namedArgument.Value.Value is string resourceName:
 					errorMessageResourceName = resourceName;
 					break;
-				case nameof(ErrorMessageResourceType) when namedArgument.Value.Value is INamedTypeSymbol resourceType:
+				case nameof(ErrorMessageResourceType)
+					when namedArgument.Value.Value is INamedTypeSymbol resourceType:
 					errorMessageResourceType = resourceType;
+					break;
+				default:
+					generationContext.Logger?.Warning(
+						$"Unexpected named argument '{namedArgument.Key}' in {nameof(generationContext.DeniedValuesAttribute)}"
+					);
 					break;
 			}
 		}

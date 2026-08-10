@@ -28,6 +28,13 @@
 			ReferenceOutputAssembly="false"
 			OutputItemType="Analyzer"
 		/>
+
+		<None
+			Include="buildTransitive\ZodSharp.props"
+			Pack="true"
+			PackagePath="buildTransitive\ZodSharp.props"
+			Visible="true"
+		/>
 	</ItemGroup>
 
 	<Target

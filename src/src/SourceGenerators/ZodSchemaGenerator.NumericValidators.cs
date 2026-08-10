@@ -32,11 +32,18 @@ partial class ZodSchemaGenerator
 		var propertyValueName = GetLocalIdentifier(propertyName, "Value");
 		var minComparison = rangeAttribute.MinimumIsExclusive ? "<=" : "<";
 		var maxComparison = rangeAttribute.MaximumIsExclusive ? ">=" : ">";
-		var minimumDescription = rangeAttribute.MinimumIsExclusive ? "greater than" : "greater than or equal to";
-		var maximumDescription = rangeAttribute.MaximumIsExclusive ? "less than" : "less than or equal to";
-		var minimumDisplay = Convert.ToString(rangeAttribute.Minimum, CultureInfo.InvariantCulture) ?? string.Empty;
-		var maximumDisplay = Convert.ToString(rangeAttribute.Maximum, CultureInfo.InvariantCulture) ?? string.Empty;
+		var minimumDescription = rangeAttribute.MinimumIsExclusive
+			? "greater than"
+			: "greater than or equal to";
+		var maximumDescription = rangeAttribute.MaximumIsExclusive
+			? "less than"
+			: "less than or equal to";
+		var minimumDisplay =
+			Convert.ToString(rangeAttribute.Minimum, CultureInfo.InvariantCulture) ?? string.Empty;
+		var maximumDisplay =
+			Convert.ToString(rangeAttribute.Maximum, CultureInfo.InvariantCulture) ?? string.Empty;
 		var messageExpression = BuildMessageExpression(
+			generationContext,
 			diagnostics,
 			rangeAttributeData,
 			displayName,
@@ -150,15 +157,27 @@ partial class ZodSchemaGenerator
 	{
 		if (rangeAttribute.Kind == RangeAttributeKind.Int32)
 		{
-			minimumExpression = ConvertNumericLiteralExpression(propertyType, (int)rangeAttribute.Minimum!);
-			maximumExpression = ConvertNumericLiteralExpression(propertyType, (int)rangeAttribute.Maximum!);
+			minimumExpression = ConvertNumericLiteralExpression(
+				propertyType,
+				(int)rangeAttribute.Minimum!
+			);
+			maximumExpression = ConvertNumericLiteralExpression(
+				propertyType,
+				(int)rangeAttribute.Maximum!
+			);
 			return minimumExpression.Length > 0 && maximumExpression.Length > 0;
 		}
 
 		if (rangeAttribute.Kind == RangeAttributeKind.Double)
 		{
-			minimumExpression = ConvertNumericLiteralExpression(propertyType, (double)rangeAttribute.Minimum!);
-			maximumExpression = ConvertNumericLiteralExpression(propertyType, (double)rangeAttribute.Maximum!);
+			minimumExpression = ConvertNumericLiteralExpression(
+				propertyType,
+				(double)rangeAttribute.Minimum!
+			);
+			maximumExpression = ConvertNumericLiteralExpression(
+				propertyType,
+				(double)rangeAttribute.Maximum!
+			);
 			return minimumExpression.Length > 0 && maximumExpression.Length > 0;
 		}
 
@@ -186,6 +205,7 @@ partial class ZodSchemaGenerator
 		return false;
 	}
 
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0072:Add missing cases")]
 	static string ConvertNumericLiteralExpression(ITypeSymbol propertyType, int value) =>
 		propertyType.SpecialType switch
 		{
@@ -203,12 +223,15 @@ partial class ZodSchemaGenerator
 			_ => string.Empty,
 		};
 
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0072:Add missing cases")]
 	static string ConvertNumericLiteralExpression(ITypeSymbol propertyType, double value) =>
 		propertyType.SpecialType switch
 		{
-			SpecialType.System_Single => $"(float){value.ToString("R", CultureInfo.InvariantCulture)}D",
+			SpecialType.System_Single =>
+				$"(float){value.ToString("R", CultureInfo.InvariantCulture)}D",
 			SpecialType.System_Double => value.ToString("R", CultureInfo.InvariantCulture) + "D",
-			SpecialType.System_Decimal => $"(decimal){value.ToString("R", CultureInfo.InvariantCulture)}D",
+			SpecialType.System_Decimal =>
+				$"(decimal){value.ToString("R", CultureInfo.InvariantCulture)}D",
 			_ => BuildNumericParseExpression(
 				propertyType,
 				value.ToString("R", CultureInfo.InvariantCulture),
@@ -216,7 +239,12 @@ partial class ZodSchemaGenerator
 			),
 		};
 
-	static string BuildNumericParseExpression(ITypeSymbol propertyType, string value, bool invariantCulture)
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0072:Add missing cases")]
+	static string BuildNumericParseExpression(
+		ITypeSymbol propertyType,
+		string value,
+		bool invariantCulture
+	)
 	{
 		var cultureExpression = invariantCulture
 			? "global::System.Globalization.CultureInfo.InvariantCulture"

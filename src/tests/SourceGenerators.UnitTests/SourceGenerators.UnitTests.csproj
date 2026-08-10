@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+		<PackageReference Include="Purview.SourceGeneratorFramework.Testing.TUnit" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\ZodSharp\ZodSharp.csproj" />

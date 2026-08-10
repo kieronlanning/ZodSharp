@@ -3,7 +3,9 @@
 partial class ZodSchemaGeneratorTests
 {
 	[Test]
-	public async Task Generate_GivenEmptyZodSchema_OutputCompilationHasNoErrors(CancellationToken cancellationToken)
+	public async Task Generate_GivenEmptyZodSchema_OutputCompilationHasNoErrors(
+		CancellationToken cancellationToken
+	)
 	{
 		// Arrange
 		const string source =
@@ -16,11 +18,11 @@ namespace Testing
 ";
 
 		// Act
-		var (result, outputCompilation) = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateAsync(source, cancellationToken);
 
 		// Assert
-		await AssertNoGeneratorExceptions(result);
-		await AssertNoCompilationErrors(outputCompilation, cancellationToken);
+		await AssertNoGeneratorExceptions(driverResult);
+		await AssertNoCompilationErrors(driverResult, cancellationToken);
 	}
 
 	[Test]
@@ -47,8 +49,8 @@ namespace Testing
 ";
 
 		// Act
-		var (result, _) = await GenerateAsync(source, cancellationToken);
-		var generatedSource = GetSchemaGeneratedSource(result);
+		var driverResult = await GenerateAsync(source, cancellationToken);
+		var generatedSource = GetSchemaGeneratedSource(driverResult);
 
 		// Assert — generated file starts with auto-generated header
 		await Assert.That(generatedSource).Contains(expectation);

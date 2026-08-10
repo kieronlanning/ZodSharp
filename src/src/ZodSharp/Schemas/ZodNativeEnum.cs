@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using ZodSharp.Core;
 
 namespace ZodSharp.Schemas;
@@ -11,6 +12,7 @@ namespace ZodSharp.Schemas;
 /// <remarks>
 /// Initializes a new instance of the <see cref="ZodNativeEnum{TEnum}"/> class.
 /// </remarks>
+[SuppressMessage("Naming", "CA1711", Justification = "Name mirrors Zod's z.nativeEnum API.")]
 public class ZodNativeEnum<TEnum>() : ZodType<TEnum>
 	where TEnum : struct, Enum
 {

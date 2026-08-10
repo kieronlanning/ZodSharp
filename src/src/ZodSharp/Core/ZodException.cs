@@ -38,7 +38,9 @@ public class ZodException : Exception
 		if (Errors.IsDefaultOrEmpty)
 			return base.ToString();
 
-		var errorMessages = Errors.Select(e => $"{string.Join(".", e.Path)}: {e.Message} ({e.Code})");
+		var errorMessages = Errors.Select(static e =>
+			$"{string.Join(".", e.Path)}: {e.Message} ({e.Code})"
+		);
 
 		return $"{Message}\n{string.Join("\n", errorMessages)}";
 	}

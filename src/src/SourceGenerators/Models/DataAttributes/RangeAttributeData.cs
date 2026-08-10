@@ -52,12 +52,18 @@ readonly record struct RangeAttributeData(
 		return Empty;
 	}
 
-	public static RangeAttributeData FromAttributeData(GenerationContext generationContext, AttributeData attributeData)
+	public static RangeAttributeData FromAttributeData(
+		GenerationContext generationContext,
+		AttributeData attributeData
+	)
 	{
 		var rangeAttributeSymbol = generationContext.RangeAttribute;
 		if (
 			rangeAttributeSymbol is null
-			|| !SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, rangeAttributeSymbol)
+			|| !SymbolEqualityComparer.Default.Equals(
+				attributeData.AttributeClass,
+				rangeAttributeSymbol
+			)
 		)
 		{
 			return Empty;
@@ -66,7 +72,11 @@ readonly record struct RangeAttributeData(
 		var constructorArguments = attributeData.ConstructorArguments;
 
 		if (constructorArguments.Length is not (2 or 3))
-			return Empty with { Exists = true, ErrorMessage = "RangeAttribute has an unsupported constructor shape." };
+			return Empty with
+			{
+				Exists = true,
+				ErrorMessage = "RangeAttribute has an unsupported constructor shape.",
+			};
 
 		var kind = RangeAttributeKind.None;
 		object? minimum = null;
@@ -77,12 +87,30 @@ readonly record struct RangeAttributeData(
 		{
 			// Min + Max
 			case 2:
-				ReadNumericRange(constructorArguments, ref kind, ref minimum, ref maximum, ref operandType);
+				ReadNumericRange(
+					constructorArguments,
+					ref kind,
+					ref minimum,
+					ref maximum,
+					ref operandType
+				);
 				break;
 			// OperandType + Min + Max
 			case 3:
-				ReadConvertedRange(constructorArguments, ref kind, ref minimum, ref maximum, ref operandType);
+				ReadConvertedRange(
+					constructorArguments,
+					ref kind,
+					ref minimum,
+					ref maximum,
+					ref operandType
+				);
 				break;
+			default:
+				return Empty with
+				{
+					Exists = true,
+					ErrorMessage = "RangeAttribute has an unsupported constructor shape.",
+				};
 		}
 
 		var minimumIsExclusive = false;
@@ -105,11 +133,13 @@ readonly record struct RangeAttributeData(
 					maximumIsExclusive = value;
 					break;
 
-				case nameof(ConvertValueInInvariantCulture) when namedArgument.Value.Value is bool value:
+				case nameof(ConvertValueInInvariantCulture)
+					when namedArgument.Value.Value is bool value:
 					convertValueInInvariantCulture = value;
 					break;
 
-				case nameof(ParseLimitsInInvariantCulture) when namedArgument.Value.Value is bool value:
+				case nameof(ParseLimitsInInvariantCulture)
+					when namedArgument.Value.Value is bool value:
 					parseLimitsInInvariantCulture = value;
 					break;
 
@@ -117,12 +147,19 @@ readonly record struct RangeAttributeData(
 					errorMessage = value;
 					break;
 
-				case nameof(ErrorMessageResourceName) when namedArgument.Value.Value is string value:
+				case nameof(ErrorMessageResourceName)
+					when namedArgument.Value.Value is string value:
 					errorMessageResourceName = value;
 					break;
 
-				case nameof(ErrorMessageResourceType) when namedArgument.Value.Value is INamedTypeSymbol value:
+				case nameof(ErrorMessageResourceType)
+					when namedArgument.Value.Value is INamedTypeSymbol value:
 					errorMessageResourceType = value;
+					break;
+				default:
+					generationContext.Logger?.Warning(
+						$"Unexpected named argument '{namedArgument.Key}' in {nameof(generationContext.RangeAttribute)}"
+					);
 					break;
 			}
 		}
@@ -173,7 +210,10 @@ readonly record struct RangeAttributeData(
 			return;
 		}
 
-		if (minimumArgument.Value is double minimumValueDouble && maximumArgument.Value is double maximumValueDouble)
+		if (
+			minimumArgument.Value is double minimumValueDouble
+			&& maximumArgument.Value is double maximumValueDouble
+		)
 		{
 			kind = RangeAttributeKind.Double;
 			minimum = minimumValueDouble;

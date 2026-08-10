@@ -10,14 +10,19 @@ partial class ZodSchemaGenerator
 {
 	readonly record struct LengthAccessor(string LengthExpression, string Origin, bool IsSupported);
 
-	static AttributeData? FindAttribute(ImmutableArray<AttributeData> attributes, INamedTypeSymbol? attributeSymbol)
+	static AttributeData? FindAttribute(
+		ImmutableArray<AttributeData> attributes,
+		INamedTypeSymbol? attributeSymbol
+	)
 	{
 		if (attributeSymbol is null)
 			return null;
 
 		for (var i = 0; i < attributes.Length; i++)
 		{
-			if (SymbolEqualityComparer.Default.Equals(attributes[i].AttributeClass, attributeSymbol))
+			if (
+				SymbolEqualityComparer.Default.Equals(attributes[i].AttributeClass, attributeSymbol)
+			)
 				return attributes[i];
 		}
 
@@ -26,7 +31,10 @@ partial class ZodSchemaGenerator
 
 	static string GetDisplayName(GenerationContext generationContext, IPropertySymbol property)
 	{
-		var displayAttribute = FindAttribute(property.GetAttributes(), generationContext.DisplayAttribute);
+		var displayAttribute = FindAttribute(
+			property.GetAttributes(),
+			generationContext.DisplayAttribute
+		);
 		if (displayAttribute is not null)
 		{
 			foreach (var namedArgument in displayAttribute.NamedArguments)
@@ -43,10 +51,20 @@ partial class ZodSchemaGenerator
 		return property.Name;
 	}
 
-	static LengthAccessor ClassifyLengthAccessor(GenerationContext generationContext, ITypeSymbol propertyType)
+	static LengthAccessor ClassifyLengthAccessor(
+		GenerationContext generationContext,
+		ITypeSymbol propertyType
+	)
 	{
-		if (propertyType.SpecialType == SpecialType.System_String || propertyType is IArrayTypeSymbol)
-			return new("propertyValue.Length", propertyType is IArrayTypeSymbol ? "array" : "string", true);
+		if (
+			propertyType.SpecialType == SpecialType.System_String
+			|| propertyType is IArrayTypeSymbol
+		)
+			return new(
+				"propertyValue.Length",
+				propertyType is IArrayTypeSymbol ? "array" : "string",
+				true
+			);
 
 		if (TypeHelpers.HasAccessibleCountProperty(propertyType))
 			return new("propertyValue.Count", "collection", true);
@@ -118,6 +136,7 @@ partial class ZodSchemaGenerator
 		);
 
 	static string BuildMessageExpression(
+		GenerationContext generationContext,
 		List<DiagnosticInfo> diagnostics,
 		AttributeData? attributeData,
 		string displayName,
@@ -128,6 +147,11 @@ partial class ZodSchemaGenerator
 		params string[] formatArguments
 	)
 	{
+		generationContext.Logger?.Debug(
+			$"Building message expression for display name '{displayName}'",
+			1
+		);
+
 		if (!string.IsNullOrEmpty(resourceName) || resourceType is not null)
 		{
 			if (string.IsNullOrEmpty(resourceName) || resourceType is null)
@@ -145,7 +169,7 @@ partial class ZodSchemaGenerator
 			var resourceProperty = resourceType
 				.GetMembers(resourceName!)
 				.OfType<IPropertySymbol>()
-				.FirstOrDefault(p =>
+				.FirstOrDefault(static p =>
 					p.IsStatic
 					&& p.Parameters.Length == 0
 					&& p.Type.SpecialType == SpecialType.System_String
@@ -226,8 +250,11 @@ partial class ZodSchemaGenerator
 	static string GetRangeMaximumFieldName(string propertyName) => $"RangeMaximum_{propertyName}";
 
 	static string GetFullyQualifiedTypeName(ITypeSymbol type) =>
-		TypeHelpers.UnwrapNullableType(type).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+		TypeHelpers
+			.UnwrapNullableType(type)
+			.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0072:Add missing cases")]
 	static bool TryBuildTypedConstantExpression(
 		TypedConstant constant,
 		ITypeSymbol propertyType,
@@ -262,15 +289,21 @@ partial class ZodSchemaGenerator
 		{
 			SpecialType.System_String when constant.Value is string value => Quote(value),
 			SpecialType.System_Char when constant.Value is char value => QuoteChar(value),
-			SpecialType.System_Boolean when constant.Value is bool value => value ? "true" : "false",
-			SpecialType.System_Byte when constant.Value is byte value => value.ToString(CultureInfo.InvariantCulture),
+			SpecialType.System_Boolean when constant.Value is bool value => value
+				? "true"
+				: "false",
+			SpecialType.System_Byte when constant.Value is byte value => value.ToString(
+				CultureInfo.InvariantCulture
+			),
 			SpecialType.System_SByte when constant.Value is sbyte value =>
 				$"(sbyte){value.ToString(CultureInfo.InvariantCulture)}",
 			SpecialType.System_Int16 when constant.Value is short value =>
 				$"(short){value.ToString(CultureInfo.InvariantCulture)}",
 			SpecialType.System_UInt16 when constant.Value is ushort value =>
 				$"(ushort){value.ToString(CultureInfo.InvariantCulture)}",
-			SpecialType.System_Int32 when constant.Value is int value => value.ToString(CultureInfo.InvariantCulture),
+			SpecialType.System_Int32 when constant.Value is int value => value.ToString(
+				CultureInfo.InvariantCulture
+			),
 			SpecialType.System_UInt32 when constant.Value is uint value =>
 				$"{value.ToString(CultureInfo.InvariantCulture)}U",
 			SpecialType.System_Int64 when constant.Value is long value =>
