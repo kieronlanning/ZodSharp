@@ -1,6 +1,11 @@
 ﻿<Project>
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.1;net10.0;</TargetFrameworks>
+		<!--
+			Supported .NET target frameworks. .NET 8 leaves support in November 2025;
+			removing it is a single-line change here.
+		-->
+		<ZodSharpNetTargetFrameworks>net8.0;net9.0;net10.0</ZodSharpNetTargetFrameworks>
+		<TargetFrameworks>netstandard2.1;$(ZodSharpNetTargetFrameworks)</TargetFrameworks>
 		<NamespacePrefix>ZodSharp</NamespacePrefix>
 		<!-- Set project-by-project -->
 		<IsPackable>false</IsPackable>
@@ -20,8 +25,7 @@
 
 	<PropertyGroup Condition="'$(IsTestProject)' == 'true'">
 		<!-- Test projects aren't executable so we need to remove .NET Standard 2.1 -->
-		<TargetFrameworks></TargetFrameworks>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFrameworks>$(ZodSharpNetTargetFrameworks)</TargetFrameworks>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(IsPackable)' == 'true'">

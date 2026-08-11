@@ -15,7 +15,10 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
 
       - name: Extract version from tag
         id: version
@@ -24,13 +27,13 @@ jobs:
           echo "version=$TAG" >> $GITHUB_OUTPUT
 
       - name: Restore
-        run: dotnet restore src/src/ZodSharp/ZodSharp.csproj
+        run: dotnet restore src/ZodSharp.slnx
 
       - name: Build (release)
-        run: dotnet build src/src/ZodSharp/ZodSharp.csproj -c Release --no-restore /p:Version=${{ steps.version.outputs.version }}
+        run: dotnet build src/ZodSharp.slnx -c Release --no-restore /p:Version=${{ steps.version.outputs.version }}
 
       - name: Pack
-        run: dotnet pack src/src/ZodSharp/ZodSharp.csproj -c Release --no-build -o ./nupkg /p:PackageVersion=${{ steps.version.outputs.version }}
+        run: dotnet pack src/ZodSharp.slnx -c Release --no-build -o ./nupkg /p:PackageVersion=${{ steps.version.outputs.version }}
 
       - name: Push to NuGet
         env:

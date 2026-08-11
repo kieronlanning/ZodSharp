@@ -48,14 +48,20 @@
 		/>
 
 		<ItemGroup>
-			<TfmSpecificPackageFile Include="$(ZodSharpSourceGeneratorAssembly)">
-				<PackagePath>analyzers/dotnet/cs/</PackagePath>
-			</TfmSpecificPackageFile>
+			<None
+				Include="$(ZodSharpSourceGeneratorAssembly)"
+				Pack="true"
+				PackagePath="analyzers/dotnet/cs/"
+				Visible="false"
+			/>
 		</ItemGroup>
 	</Target>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-		<PackageReference Include="System.Collections.Immutable" />
+		<PackageReference
+			Include="System.Collections.Immutable"
+			VersionOverride="$(SystemCollectionsImmutableVersion)"
+		/>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -63,6 +69,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+		<PackageReference
+			Include="Microsoft.Extensions.DependencyInjection.Abstractions"
+			VersionOverride="$(MicrosoftExtensionsDependencyInjectionAbstractionsVersion)"
+		/>
 	</ItemGroup>
 </Project>

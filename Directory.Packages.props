@@ -1,7 +1,16 @@
 <Project>
 	<PropertyGroup>
 		<CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-		<!-- Keep compiler-facing Roslyn packages aligned with the minimum SDK pinned in global.json so analyser ProjectReferences load on build machines. -->
+		<!--
+			Keep compiler-facing Roslyn packages aligned with the minimum required by
+			Purview.SourceGeneratorFramework (Microsoft.CodeAnalysis 4.13.0.0). Consumers can still
+			compile net8.0 projects, but they need a build SDK that ships Roslyn 4.13+.
+		-->
+		<!--
+			Minimum Roslyn version that ships the APIs used by the source generator
+			(e.g. IncrementalGeneratorPostInitializationContext.AddEmbeddedAttributeDefinition).
+			Consumers can still target net8.0, but the build SDK must be .NET 10+.
+		-->
 		<RoslynCompilerVersion>[5.0.0,)</RoslynCompilerVersion>
 		<RoslynAnalyzersVersion>[5.6.0,)</RoslynAnalyzersVersion>
 		<TUnitVersion>1.61.0</TUnitVersion>
