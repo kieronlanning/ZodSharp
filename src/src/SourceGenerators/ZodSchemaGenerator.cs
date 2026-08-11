@@ -33,32 +33,31 @@ public sealed partial class ZodSchemaGenerator : IIncrementalGenerator
 		// Register source outputs
 		context.RegisterSourceOutput(
 			generationValueProviders,
-			static (spc, source) =>
+			(spc, source) =>
 			{
-				if (!source.IsSourceGeneratorEnabled)
+				if (source.IsSourceGeneratorEnabled)
 					return;
 
+				var isFatal = false;
 				foreach (var schema in source.ZodSchemas)
 				{
 					if (schema.HasDiagnostics)
 					{
-						ReportDiagnostics(spc, schema.Diagnostics, source.GenerationContext.Logger);
+						ReportDiagnostics(spc, schema.Diagnostics, _logger);
 					}
 
 					if (schema.IsFatal)
-						return;
+						isFatal = true;
 				}
 
-				var primarySchemas = source
-					.ZodSchemas.Where(static s => s.IsSuccess && s.Value is not null)
-					.Select(static s => s.Value!)
-					.ToList();
+				if (isFatal)
+					return;
 
-				var allSchemas = DiscoverAllSchemas(primarySchemas, source.GenerationContext);
-
+				var allSchemas = DiscoverAllSchemas(source.ZodSchemas);
 				foreach (var (descriptor, isPrimary) in allSchemas)
 				{
-					Execute(descriptor, source.GenerationContext, spc, isPrimary);
+					source.GenerationContext.CreateCodeWriter();
+					BuildSchema(descriptor, source.GenerationContext, _logger, spc, isPrimary);
 				}
 			}
 		);

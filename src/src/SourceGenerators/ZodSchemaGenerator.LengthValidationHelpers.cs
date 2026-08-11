@@ -3,6 +3,7 @@ using System.Globalization;
 using Microsoft.CodeAnalysis;
 using ZodSharp.SourceGenerators.Helpers;
 using ZodSharp.SourceGenerators.Models;
+using ZodSharp.SourceGenerators.Models.DataAttributes;
 
 namespace ZodSharp.SourceGenerators;
 
@@ -10,51 +11,15 @@ partial class ZodSchemaGenerator
 {
 	readonly record struct LengthAccessor(string LengthExpression, string Origin, bool IsSupported);
 
-	static AttributeData? FindAttribute(
-		ImmutableArray<AttributeData> attributes,
-		INamedTypeSymbol? attributeSymbol
-	)
+	static string GetDisplayName(IPropertySymbol property)
 	{
-		if (attributeSymbol is null)
-			return null;
-
-		for (var i = 0; i < attributes.Length; i++)
-		{
-			if (
-				SymbolEqualityComparer.Default.Equals(attributes[i].AttributeClass, attributeSymbol)
-			)
-				return attributes[i];
-		}
-
-		return null;
+		var displayAttribute = DisplayAttributeData.FromAttributeData(property.GetAttributes());
+		return displayAttribute.Exists && !string.IsNullOrWhiteSpace(displayAttribute.Name)
+			? displayAttribute.Name!
+			: property.Name;
 	}
 
-	static string GetDisplayName(GenerationContext generationContext, IPropertySymbol property)
-	{
-		var displayAttribute = FindAttribute(
-			property.GetAttributes(),
-			generationContext.DisplayAttribute
-		);
-		if (displayAttribute is not null)
-		{
-			foreach (var namedArgument in displayAttribute.NamedArguments)
-			{
-				if (
-					namedArgument.Key == "Name"
-					&& namedArgument.Value.Value is string name
-					&& !string.IsNullOrEmpty(name)
-				)
-					return name;
-			}
-		}
-
-		return property.Name;
-	}
-
-	static LengthAccessor ClassifyLengthAccessor(
-		GenerationContext generationContext,
-		ITypeSymbol propertyType
-	)
+	static LengthAccessor ClassifyLengthAccessor(ITypeSymbol propertyType)
 	{
 		if (
 			propertyType.SpecialType == SpecialType.System_String
@@ -69,14 +34,14 @@ partial class ZodSchemaGenerator
 		if (TypeHelpers.HasAccessibleCountProperty(propertyType))
 			return new("propertyValue.Count", "collection", true);
 
-		if (TypeHelpers.ImplementsInterface(propertyType, generationContext.IEnumerableOfT))
+		if (TypeHelpers.Implements(propertyType, TypeLibrary.Collections.IEnumerableT))
 			return new(
 				"global::ZodSharp.Optimizations.CollectionCountHelper.GetCount(propertyValue)",
 				"collection",
 				true
 			);
 
-		if (TypeHelpers.ImplementsInterface(propertyType, generationContext.IEnumerable))
+		if (TypeHelpers.Implements(propertyType, TypeLibrary.Collections.IEnumerable))
 			return new(
 				"global::ZodSharp.Optimizations.CollectionCountHelper.GetCount(propertyValue)",
 				"collection",
@@ -136,25 +101,26 @@ partial class ZodSchemaGenerator
 		);
 
 	static string BuildMessageExpression(
-		GenerationContext generationContext,
+		GenerationLogger? logger,
 		List<DiagnosticInfo> diagnostics,
 		AttributeData? attributeData,
 		string displayName,
-		string? literalMessage,
-		string? resourceName,
-		INamedTypeSymbol? resourceType,
+		ValidationAttributeData validationAttribute,
 		string defaultMessageExpression,
 		params string[] formatArguments
 	)
 	{
-		generationContext.Logger?.Debug(
-			$"Building message expression for display name '{displayName}'",
-			1
-		);
+		logger?.Debug($"Building message expression for display name '{displayName}'", 1);
 
-		if (!string.IsNullOrEmpty(resourceName) || resourceType is not null)
+		if (
+			!string.IsNullOrEmpty(validationAttribute.ErrorMessageResourceName)
+			|| validationAttribute.ErrorMessageResourceType is not null
+		)
 		{
-			if (string.IsNullOrEmpty(resourceName) || resourceType is null)
+			if (
+				string.IsNullOrEmpty(validationAttribute.ErrorMessageResourceName)
+				|| validationAttribute.ErrorMessageResourceType is null
+			)
 			{
 				diagnostics.Add(
 					DiagnosticInfo.Create(
@@ -166,8 +132,8 @@ partial class ZodSchemaGenerator
 				return defaultMessageExpression;
 			}
 
-			var resourceProperty = resourceType
-				.GetMembers(resourceName!)
+			var resourceProperty = validationAttribute
+				.ErrorMessageResourceType.GetMembers(validationAttribute.ErrorMessageResourceName!)
 				.OfType<IPropertySymbol>()
 				.FirstOrDefault(static p =>
 					p.IsStatic
@@ -186,8 +152,8 @@ partial class ZodSchemaGenerator
 						string.Format(
 							CultureInfo.InvariantCulture,
 							"Unable to resolve a public static string resource property '{0}' on '{1}'.",
-							resourceName,
-							resourceType.ToDisplayString()
+							validationAttribute.ErrorMessageResourceName,
+							validationAttribute.ErrorMessageResourceType.ToDisplayString()
 						)
 					)
 				);
@@ -195,20 +161,20 @@ partial class ZodSchemaGenerator
 			}
 
 			return BuildFormatExpression(
-				$"{resourceType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{resourceProperty.Name}",
+				$"{validationAttribute.ErrorMessageResourceType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{resourceProperty.Name}",
 				formatArguments
 			);
 		}
 
-		return !string.IsNullOrEmpty(literalMessage)
-			? BuildFormatExpression(Quote(literalMessage!), formatArguments)
+		return !string.IsNullOrEmpty(validationAttribute.ErrorMessage)
+			? BuildFormatExpression($"\"{validationAttribute.ErrorMessage}\"", formatArguments)
 			: defaultMessageExpression;
 	}
 
 	static string BuildFormatExpression(string formatExpression, params string[] formatArguments) =>
 		formatArguments.Length == 0
 			? formatExpression
-			: $"global::System.String.Format(global::System.Globalization.CultureInfo.CurrentCulture, {formatExpression}, {string.Join(", ", formatArguments)})";
+			: $"string.Format(global::System.Globalization.CultureInfo.CurrentCulture, {formatExpression}, {string.Join(", ", formatArguments)})";
 
 	static void WriteValidationError(
 		GenerationContext generationContext,
@@ -220,11 +186,11 @@ partial class ZodSchemaGenerator
 		int? maximum = null
 	)
 	{
-		generationContext.Writer.WriteLine(
+		generationContext.CodeWriter.WriteLine(
 			"errors ??= new global::System.Collections.Generic.List<global::ZodSharp.Core.ValidationError>();"
 		);
-		generationContext.Writer.WriteLine(
-			$"errors.Add({TypeHelpers.ValidationError.Global()}.Create({Quote(errorCode)}, {messageExpression}, {pathFieldName}, origin: {Quote(origin)}, minimum: {(minimum.HasValue ? minimum.Value.ToString(CultureInfo.InvariantCulture) : "null")}, maximum: {(maximum.HasValue ? maximum.Value.ToString(CultureInfo.InvariantCulture) : "null")}, inclusive: true));"
+		generationContext.CodeWriter.WriteLine(
+			$"errors.Add({TypeLibrary.ValidationError}.Create({CodeGenHelpers.Quote(errorCode)}, {messageExpression}, {pathFieldName}, origin: {CodeGenHelpers.Quote(origin)}, minimum: {(minimum.HasValue ? minimum.Value.ToString(CultureInfo.InvariantCulture) : "null")}, maximum: {(maximum.HasValue ? maximum.Value.ToString(CultureInfo.InvariantCulture) : "null")}, inclusive: true));"
 		);
 	}
 
@@ -235,11 +201,11 @@ partial class ZodSchemaGenerator
 		string pathFieldName
 	)
 	{
-		generationContext.Writer.WriteLine(
+		generationContext.CodeWriter.WriteLine(
 			"errors ??= new global::System.Collections.Generic.List<global::ZodSharp.Core.ValidationError>();"
 		);
-		generationContext.Writer.WriteLine(
-			$"errors.Add({TypeHelpers.ValidationError.Global()}.Create({Quote(errorCode)}, {messageExpression}, {pathFieldName}));"
+		generationContext.CodeWriter.WriteLine(
+			$"errors.Add({TypeLibrary.ValidationError}.Create({CodeGenHelpers.Quote(errorCode)}, {messageExpression}, {pathFieldName}));"
 		);
 	}
 
@@ -287,8 +253,12 @@ partial class ZodSchemaGenerator
 
 		expression = targetType.SpecialType switch
 		{
-			SpecialType.System_String when constant.Value is string value => Quote(value),
-			SpecialType.System_Char when constant.Value is char value => QuoteChar(value),
+			SpecialType.System_String when constant.Value is string value => CodeGenHelpers.Quote(
+				value
+			),
+			SpecialType.System_Char when constant.Value is char value => CodeGenHelpers.QuoteChar(
+				value
+			),
 			SpecialType.System_Boolean when constant.Value is bool value => value
 				? "true"
 				: "false",
@@ -325,24 +295,6 @@ partial class ZodSchemaGenerator
 		};
 
 		return expression.Length > 0;
-	}
-
-	static string QuoteChar(char value)
-	{
-		return value switch
-		{
-			'\'' => "'\\''",
-			'\\' => "'\\\\'",
-			'\0' => "'\\0'",
-			'\a' => "'\\a'",
-			'\b' => "'\\b'",
-			'\f' => "'\\f'",
-			'\n' => "'\\n'",
-			'\r' => "'\\r'",
-			'\t' => "'\\t'",
-			'\v' => "'\\v'",
-			_ => $"'{value}'",
-		};
 	}
 
 	static string BuildEqualityComparisonExpression(

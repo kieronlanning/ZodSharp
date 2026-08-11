@@ -24,11 +24,9 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var generatedSource = GetSchemaGeneratedSource(driverResult, "InnerSchema");
 
-		await AssertNoGeneratorExceptions(driverResult);
-		await AssertNoCompilationErrors(driverResult, cancellationToken);
 		await Assert.That(generatedSource).Contains("private static partial class InnerSchema");
 		await Assert.That(generatedSource).Contains("public partial class Outer");
 	}
@@ -56,10 +54,7 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
-
-		await AssertNoGeneratorExceptions(driverResult);
-		await AssertNoCompilationErrors(driverResult, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 
 		await Assert.That(GetSchemaGeneratedSource(driverResult, "InnerSchema")).IsNotEmpty();
 	}
@@ -86,7 +81,7 @@ namespace Testing
 	}
 }";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var outerType = assembly.GetType("Testing.Outer")!;

@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+using System.Reflection;
+using ZodSharp.SourceGenerators.Infra;
+using ZodSharp.SourceGenerators.Models;
 
 namespace ZodSharp.SourceGenerators;
 
@@ -11,7 +13,7 @@ partial class ZodSchemaGeneratorTests
 		CancellationToken cancellationToken
 	)
 	{
-		var driverResult = await GenerateAsync(UserSource, cancellationToken);
+		var driverResult = await GenerateZodAsync(UserSource, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var user = CreateUser(assembly, "John Doe", 30, "john@example.com");
@@ -43,7 +45,7 @@ partial class ZodSchemaGeneratorTests
 		CancellationToken cancellationToken
 	)
 	{
-		var driverResult = await GenerateAsync(UserSource, cancellationToken);
+		var driverResult = await GenerateZodAsync(UserSource, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var user = CreateUser(assembly, name, age, email);
@@ -63,7 +65,7 @@ partial class ZodSchemaGeneratorTests
 		CancellationToken cancellationToken
 	)
 	{
-		var driverResult = await GenerateAsync(UserSource, cancellationToken);
+		var driverResult = await GenerateZodAsync(UserSource, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var user = CreateUser(assembly, "AB", 30, "john@example.com");
@@ -82,12 +84,9 @@ partial class ZodSchemaGeneratorTests
 		CancellationToken cancellationToken
 	)
 	{
-		var driverResult = await GenerateAsync(UserSource, cancellationToken);
+		var driverResult = await GenerateZodAsync(UserSource, cancellationToken);
 
 		var generatedSource = GetSchemaGeneratedSource(driverResult.Result, "UserSchema");
-
-		await AssertNoGeneratorExceptions(driverResult.Result);
-		await AssertNoCompilationErrors(driverResult.OutputCompilation, cancellationToken);
 
 		await Assert.That(generatedSource).Contains("value.Name == null");
 		await Assert.That(generatedSource).Contains("var nameValue = value.Name;");
@@ -136,12 +135,9 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 
 		var generatedSource = GetSchemaGeneratedSource(driverResult.Result, "LengthExamplesSchema");
-
-		await AssertNoGeneratorExceptions(driverResult.Result);
-		await AssertNoCompilationErrors(driverResult.OutputCompilation, cancellationToken);
 
 		await Assert.That(generatedSource).Contains("propertyValue.Length");
 		await Assert.That(generatedSource).Contains("propertyValue.Count");
@@ -181,11 +177,8 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var generatedSource = GetSchemaGeneratedSource(driverResult, "AttributeExamplesSchema");
-
-		await AssertNoGeneratorExceptions(driverResult);
-		await AssertNoCompilationErrors(driverResult, cancellationToken);
 
 		await Assert
 			.That(generatedSource)
@@ -230,7 +223,7 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var modelType = assembly.GetType("Testing.ResourceModel")!;
@@ -282,7 +275,7 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var inventoryType = assembly.GetType("Testing.Inventory")!;
@@ -332,7 +325,7 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var modelType = assembly.GetType("Testing.AttributeRuntimeModel")!;
@@ -420,7 +413,7 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var modelType = assembly.GetType("Testing.FullAttributeCoverageModel")!;
@@ -476,10 +469,13 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
-		var diagnostics = GetGeneratorDiagnostics(driverResult);
+		var driverResult = await GenerateZodAsync(
+			source,
+			GenerationDriverContext.IgnoreDiagnostic,
+			cancellationToken
+		);
 
-		await Assert.That(diagnostics.Any(static d => d.Id == "ZODSGEN003")).IsTrue();
+		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.InvalidLengthAttribute);
 	}
 
 	[Test]
@@ -502,10 +498,14 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
-		var diagnostics = GetGeneratorDiagnostics(driverResult);
-
-		await Assert.That(diagnostics.Any(static d => d.Id == "ZODSGEN004")).IsTrue();
+		var driverResult = await GenerateZodAsync(
+			source,
+			GenerationDriverContext.IgnoreDiagnostic,
+			cancellationToken
+		);
+		await Assert
+			.That(driverResult)
+			.HasDiagnostic(GeneratorDiagnostics.UnsupportedLengthAttributeTarget);
 	}
 
 	[Test]
@@ -532,11 +532,14 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
-		var diagnostics = GetGeneratorDiagnostics(driverResult);
+		var driverResult = await GenerateZodAsync(
+			source,
+			GenerationDriverContext.IgnoreDiagnostic,
+			cancellationToken
+		);
 
 		await Assert
-			.That(diagnostics.Count(static d => d.Id == "ZODSGEN006"))
+			.That(driverResult.Result.Diagnostics.Count(static d => d.Id == "ZODSGEN006"))
 			.IsGreaterThanOrEqualTo(2);
 	}
 
@@ -560,10 +563,15 @@ namespace Testing
 }
 ";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
-		var diagnostics = GetGeneratorDiagnostics(driverResult);
+		var driverResult = await GenerateZodAsync(
+			source,
+			GenerationDriverContext.IgnoreDiagnostic,
+			cancellationToken
+		);
 
-		await Assert.That(diagnostics.Any(static d => d.Id == "ZODSGEN005")).IsTrue();
+		await Assert
+			.That(driverResult)
+			.HasDiagnostic(GeneratorDiagnostics.InvalidDataAnnotationsErrorMessage);
 	}
 
 	const string UserSource =

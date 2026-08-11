@@ -1,4 +1,4 @@
-﻿namespace ZodSharp.SourceGenerators;
+namespace ZodSharp.SourceGenerators;
 
 partial class ZodSchemaGeneratorTests
 {
@@ -18,11 +18,10 @@ namespace Testing
 ";
 
 		// Act
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 
 		// Assert
-		await AssertNoGeneratorExceptions(driverResult);
-		await AssertNoCompilationErrors(driverResult, cancellationToken);
+		await Assert.That(driverResult.EnsureValid).ThrowsNothing();
 	}
 
 	[Test]
@@ -49,7 +48,7 @@ namespace Testing
 ";
 
 		// Act
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var generatedSource = GetSchemaGeneratedSource(driverResult);
 
 		// Assert — generated file starts with auto-generated header

@@ -82,18 +82,18 @@ static class CodeGenHelpers
 		using (writer.Block($"if ({comparison})"))
 		{
 			writer.WriteLine(
-				$"errors ??= new global::System.Collections.Generic.List<{TypeLibrary.ValidationError}>();"
+				$"errors ??= new {TypeLibrary.Collections.List.MakeGeneric(TypeLibrary.ValidationError)}();"
 			);
 			using (
 				writer.Block(
 					$"errors.Add(new {TypeLibrary.ValidationError}",
-					seperator: "(",
-					closingSeperator: "));"
+					separator: "(",
+					closingSeparator: "));"
 				)
 			)
 			{
-				writer.WriteIndent().Quote(errorCode).Write(",").NewLine();
-				writer.WriteIndent().Quote(errorMessage).Write(",").NewLine();
+				writer.WriteIndent().Quote(errorCode).WriteLine(",");
+				writer.WriteIndent().Quote(errorMessage).WriteLine(",");
 				writer.WriteLine($"new[] {{ \"{propertyName}\" }}");
 			}
 		}
@@ -146,8 +146,37 @@ static class CodeGenHelpers
 			}
 		);
 
-	public static string ProcessGeneratedCode(string source) =>
-		source
+	public static string GetPathFieldName(string propertyName) => $"Path_{propertyName}";
+
+	public static string GetLocalIdentifier(string propertyName, string suffix) =>
+		string.IsNullOrEmpty(propertyName)
+			? suffix
+			: char.ToLowerInvariant(propertyName[0]) + propertyName.Substring(1) + suffix;
+
+	public static string Quote(string value) =>
+		$"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"")}\"";
+
+	public static string QuoteChar(char value)
+	{
+		return value switch
+		{
+			'\'' => "'\\''",
+			'\\' => "'\\\\'",
+			'\0' => "'\\0'",
+			'\a' => "'\\a'",
+			'\b' => "'\\b'",
+			'\f' => "'\\f'",
+			'\n' => "'\\n'",
+			'\r' => "'\\r'",
+			'\t' => "'\\t'",
+			'\v' => "'\\v'",
+			_ => $"'{value}'",
+		};
+	}
+
+	public static string ProcessGeneratedCode(CodeWriter writer) =>
+		writer
+			.ToString()
 			.Replace(CodeGenReplacementToken, GetGeneratedCodeAttribute())
 			.Replace(AttribCodeGenReplacementToken, GetAttributeGeneratedCodeAttribute())
 			.Replace(NonClassCodeGenReplacementToken, GetNonClassGeneratedCodeAttribute());

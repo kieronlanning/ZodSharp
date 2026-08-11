@@ -6,6 +6,10 @@ partial class TypeLibrary
 	{
 		public const string Namespace = "System.ComponentModel.DataAnnotations";
 
+		public static readonly TypeValueObject DisplayAttribute = new(
+			nameof(DisplayAttribute),
+			Namespace
+		);
 		public static readonly TypeValueObject RequiredAttribute = new(
 			nameof(RequiredAttribute),
 			Namespace
@@ -47,8 +51,28 @@ partial class TypeLibrary
 			nameof(DeniedValuesAttribute),
 			Namespace
 		);
-		public static readonly TypeValueObject DisplayAttribute = new(
-			nameof(DisplayAttribute),
+		public static readonly TypeValueObject UrlAttribute = new(nameof(UrlAttribute), Namespace);
+		public static readonly TypeValueObject PhoneAttribute = new(
+			nameof(PhoneAttribute),
+			Namespace
+		);
+		public static readonly TypeValueObject CreditCardAttribute = new(
+			nameof(CreditCardAttribute),
+			Namespace
+		);
+		public static readonly TypeValueObject CompareAttribute = new(
+			nameof(CompareAttribute),
+			Namespace
+		);
+		public static readonly TypeValueObject Base64StringAttribute = new(
+			nameof(Base64StringAttribute),
+			Namespace
+		);
+
+		// This is abstract and the base class to all the other validation attributes,
+		// so we can use it to get the base properties
+		public static readonly TypeValueObject ValidationAttribute = new(
+			nameof(ValidationAttribute),
 			Namespace
 		);
 	}

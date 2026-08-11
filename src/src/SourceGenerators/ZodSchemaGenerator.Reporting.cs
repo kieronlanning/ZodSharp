@@ -1,7 +1,4 @@
-using System.Globalization;
 using Microsoft.CodeAnalysis;
-using ZodSharp.SourceGenerators.Helpers;
-using ZodSharp.SourceGenerators.Models;
 
 namespace ZodSharp.SourceGenerators;
 
@@ -10,14 +7,8 @@ partial class ZodSchemaGenerator
 	static void ReportDiagnostics(
 		SourceProductionContext context,
 		DiagnosticInfo diagnostic,
-		GenerationContext generationContext
-	) => ReportDiagnostics(context, [diagnostic], generationContext.Logger);
-
-	static void ReportDiagnostics(
-		SourceProductionContext context,
-		IEnumerable<DiagnosticInfo> diagnostics,
-		GenerationContext generationContext
-	) => ReportDiagnostics(context, diagnostics, generationContext.Logger);
+		GenerationLogger? logger
+	) => ReportDiagnostics(context, [diagnostic], logger);
 
 	static void ReportDiagnostics(
 		SourceProductionContext context,
@@ -30,7 +21,7 @@ partial class ZodSchemaGenerator
 			var diagnostic = diagnosticInfo.ToDiagnostic();
 			context.ReportDiagnostic(diagnostic);
 
-			logger?.Diagnostic(diagnostic.GetMessage(CultureInfo.InvariantCulture));
+			logger?.Diagnostic(diagnosticInfo);
 		}
 	}
 }

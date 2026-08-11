@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Globalization;
 using Microsoft.CodeAnalysis;
 using ZodSharp.SourceGenerators.Helpers;
-using ZodSharp.SourceGenerators.Models;
 using ZodSharp.SourceGenerators.Models.DataAttributes;
 
 namespace ZodSharp.SourceGenerators;
@@ -11,6 +10,7 @@ partial class ZodSchemaGenerator
 {
 	static void GenerateNumericValidations(
 		GenerationContext generationContext,
+		GenerationLogger? logger,
 		IPropertySymbol property,
 		ITypeSymbol propertyType,
 		string propertyName,
@@ -18,18 +18,15 @@ partial class ZodSchemaGenerator
 		List<DiagnosticInfo> diagnostics
 	)
 	{
-		var rangeAttributeData = FindAttribute(attributes, generationContext.RangeAttribute);
-		var rangeAttribute = rangeAttributeData is null
-			? RangeAttributeData.Empty
-			: RangeAttributeData.FromAttributeData(generationContext, rangeAttributeData);
-		if (!rangeAttribute.Exists)
-			return;
-
+		var rangeAttribute = RangeAttributeData.FromAttributeData(
+			attributes,
+			out var rangeAttributeData
+		);
 		if (!TryBuildRangeBoundaryExpressions(propertyType, rangeAttribute, out _, out _))
 			return;
 
-		var displayName = GetDisplayName(generationContext, property);
-		var propertyValueName = GetLocalIdentifier(propertyName, "Value");
+		var displayName = GetDisplayName(property);
+		var propertyValueName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Value");
 		var minComparison = rangeAttribute.MinimumIsExclusive ? "<=" : "<";
 		var maxComparison = rangeAttribute.MaximumIsExclusive ? ">=" : ">";
 		var minimumDescription = rangeAttribute.MinimumIsExclusive
@@ -43,26 +40,26 @@ partial class ZodSchemaGenerator
 		var maximumDisplay =
 			Convert.ToString(rangeAttribute.Maximum, CultureInfo.InvariantCulture) ?? string.Empty;
 		var messageExpression = BuildMessageExpression(
-			generationContext,
+			logger,
 			diagnostics,
 			rangeAttributeData,
 			displayName,
-			rangeAttribute.ErrorMessage,
-			rangeAttribute.ErrorMessageResourceName,
-			rangeAttribute.ErrorMessageResourceType,
-			Quote(
+			rangeAttribute.ValidationAttribute,
+			CodeGenHelpers.Quote(
 				$"Field '{displayName}' must be {minimumDescription} {minimumDisplay} and {maximumDescription} {maximumDisplay}."
 			),
-			Quote(displayName),
-			Quote(minimumDisplay),
-			Quote(maximumDisplay)
+			CodeGenHelpers.Quote(displayName),
+			CodeGenHelpers.Quote(minimumDisplay),
+			CodeGenHelpers.Quote(maximumDisplay)
 		);
 
-		using (generationContext.Writer.Block())
+		using (generationContext.CodeWriter.Block())
 		{
-			generationContext.Writer.WriteLine($"var {propertyValueName} = value.{propertyName};");
+			generationContext.CodeWriter.WriteLine(
+				$"var {propertyValueName} = value.{propertyName};"
+			);
 			using (
-				generationContext.Writer.Block(
+				generationContext.CodeWriter.Block(
 					$"if ({propertyValueName} {minComparison} {GetRangeMinimumFieldName(propertyName)} || {propertyValueName} {maxComparison} {GetRangeMaximumFieldName(propertyName)})"
 				)
 			)
@@ -71,12 +68,12 @@ partial class ZodSchemaGenerator
 					generationContext,
 					"invalid_range",
 					messageExpression,
-					GetPathFieldName(propertyName)
+					CodeGenHelpers.GetPathFieldName(propertyName)
 				);
 			}
 		}
 
-		generationContext.Writer.WriteLine();
+		generationContext.CodeWriter.WriteLine();
 	}
 
 	static bool TryBuildRangeBoundaryExpressions(
@@ -253,27 +250,27 @@ partial class ZodSchemaGenerator
 		return propertyType.SpecialType switch
 		{
 			SpecialType.System_Byte =>
-				$"global::System.Byte.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
+				$"global::System.Byte.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
 			SpecialType.System_SByte =>
-				$"global::System.SByte.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
+				$"global::System.SByte.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
 			SpecialType.System_Int16 =>
-				$"global::System.Int16.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
+				$"global::System.Int16.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
 			SpecialType.System_UInt16 =>
-				$"global::System.UInt16.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
+				$"global::System.UInt16.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
 			SpecialType.System_Int32 =>
-				$"global::System.Int32.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
+				$"global::System.Int32.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
 			SpecialType.System_UInt32 =>
-				$"global::System.UInt32.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
+				$"global::System.UInt32.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
 			SpecialType.System_Int64 =>
-				$"global::System.Int64.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
+				$"global::System.Int64.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
 			SpecialType.System_UInt64 =>
-				$"global::System.UInt64.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
+				$"global::System.UInt64.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Integer, {cultureExpression})",
 			SpecialType.System_Single =>
-				$"global::System.Single.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, {cultureExpression})",
+				$"global::System.Single.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, {cultureExpression})",
 			SpecialType.System_Double =>
-				$"global::System.Double.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, {cultureExpression})",
+				$"global::System.Double.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Float | global::System.Globalization.NumberStyles.AllowThousands, {cultureExpression})",
 			SpecialType.System_Decimal =>
-				$"global::System.Decimal.Parse({Quote(value)}, global::System.Globalization.NumberStyles.Number, {cultureExpression})",
+				$"global::System.Decimal.Parse({CodeGenHelpers.Quote(value)}, global::System.Globalization.NumberStyles.Number, {cultureExpression})",
 			_ => string.Empty,
 		};
 	}
@@ -283,7 +280,7 @@ partial class ZodSchemaGenerator
 		var cultureExpression = invariantCulture
 			? "global::System.Globalization.CultureInfo.InvariantCulture"
 			: "global::System.Globalization.CultureInfo.CurrentCulture";
-		return $"global::System.DateTime.Parse({Quote(value)}, {cultureExpression})";
+		return $"global::System.DateTime.Parse({CodeGenHelpers.Quote(value)}, {cultureExpression})";
 	}
 
 	static string BuildDateOnlyParseExpression(string value, bool invariantCulture)
@@ -291,7 +288,7 @@ partial class ZodSchemaGenerator
 		var cultureExpression = invariantCulture
 			? "global::System.Globalization.CultureInfo.InvariantCulture"
 			: "global::System.Globalization.CultureInfo.CurrentCulture";
-		return $"global::System.DateOnly.Parse({Quote(value)}, {cultureExpression})";
+		return $"global::System.DateOnly.Parse({CodeGenHelpers.Quote(value)}, {cultureExpression})";
 	}
 
 	static string BuildTimeOnlyParseExpression(string value, bool invariantCulture)
@@ -299,6 +296,6 @@ partial class ZodSchemaGenerator
 		var cultureExpression = invariantCulture
 			? "global::System.Globalization.CultureInfo.InvariantCulture"
 			: "global::System.Globalization.CultureInfo.CurrentCulture";
-		return $"global::System.TimeOnly.Parse({Quote(value)}, {cultureExpression})";
+		return $"global::System.TimeOnly.Parse({CodeGenHelpers.Quote(value)}, {cultureExpression})";
 	}
 }

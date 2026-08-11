@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using System.Globalization;
 using Microsoft.CodeAnalysis;
-using ZodSharp.SourceGenerators.Models;
+using ZodSharp.SourceGenerators.Helpers;
 using ZodSharp.SourceGenerators.Models.DataAttributes;
 
 namespace ZodSharp.SourceGenerators;
@@ -10,6 +10,7 @@ partial class ZodSchemaGenerator
 {
 	static void GenerateCollectionValidations(
 		GenerationContext generationContext,
+		GenerationLogger? logger,
 		IPropertySymbol property,
 		ITypeSymbol propertyType,
 		string propertyName,
@@ -17,26 +18,17 @@ partial class ZodSchemaGenerator
 		List<DiagnosticInfo> diagnostics
 	)
 	{
-		var displayName = GetDisplayName(generationContext, property);
-		var lengthAccessor = ClassifyLengthAccessor(generationContext, propertyType);
-		var lengthAttributeData = FindAttribute(attributes, generationContext.LengthAttribute);
-		var lengthAttr = lengthAttributeData is null
-			? LengthAttributeData.Empty
-			: LengthAttributeData.FromAttributeData(generationContext, lengthAttributeData);
-		var minLengthAttributeData = FindAttribute(
+		var displayName = GetDisplayName(property);
+		var lengthAccessor = ClassifyLengthAccessor(propertyType);
+		var lengthAttr = LengthAttributeData.FromAttributeData(attributes, out var lengthAttrData);
+		var minLengthAttr = MinLengthAttributeData.FromAttributeData(
 			attributes,
-			generationContext.MinLengthAttribute
+			out var minLengthAttrData
 		);
-		var minLengthAttr = minLengthAttributeData is null
-			? MinLengthAttributeData.Empty
-			: MinLengthAttributeData.FromAttributeData(generationContext, minLengthAttributeData);
-		var maxLengthAttributeData = FindAttribute(
+		var maxLengthAttr = MaxLengthAttributeData.FromAttributeData(
 			attributes,
-			generationContext.MaxLengthAttribute
+			out var maxLengthAttrData
 		);
-		var maxLengthAttr = maxLengthAttributeData is null
-			? MaxLengthAttributeData.Empty
-			: MaxLengthAttributeData.FromAttributeData(generationContext, maxLengthAttributeData);
 
 		if (!lengthAttr.Exists && !minLengthAttr.Exists && !maxLengthAttr.Exists)
 			return;
@@ -44,12 +36,14 @@ partial class ZodSchemaGenerator
 		if (!lengthAccessor.IsSupported)
 		{
 			if (lengthAttr.Exists)
+			{
 				AddUnsupportedLengthTargetDiagnostic(
 					diagnostics,
-					lengthAttributeData,
+					lengthAttrData,
 					propertyName,
 					propertyType
 				);
+			}
 
 			return;
 		}
@@ -59,24 +53,24 @@ partial class ZodSchemaGenerator
 			if (lengthAttr.MinimumLength < 0)
 				AddInvalidLengthConfigurationDiagnostic(
 					diagnostics,
-					lengthAttributeData,
+					lengthAttrData,
 					$"LengthAttribute on '{propertyName}' must use a minimum length greater than or equal to zero."
 				);
 			else if (lengthAttr.MaximumLength < lengthAttr.MinimumLength)
 				AddInvalidLengthConfigurationDiagnostic(
 					diagnostics,
-					lengthAttributeData,
+					lengthAttrData,
 					$"LengthAttribute on '{propertyName}' must use a maximum length greater than or equal to the minimum length."
 				);
 		}
 
-		var propertyValueName = GetLocalIdentifier(propertyName, "Value");
-		var propertyLengthName = GetLocalIdentifier(propertyName, "Length");
-		generationContext.Writer.WriteLine($"var {propertyValueName} = value.{propertyName};");
-		using (generationContext.Writer.Block($"if ({propertyValueName} is not null)"))
+		var propertyValueName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Value");
+		var propertyLengthName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Length");
+		generationContext.CodeWriter.WriteLine($"var {propertyValueName} = value.{propertyName};");
+		using (generationContext.CodeWriter.Block($"if ({propertyValueName} is not null)"))
 		{
-			generationContext.Writer.WriteLine($"var propertyValue = {propertyValueName};");
-			generationContext.Writer.WriteLine(
+			generationContext.CodeWriter.WriteLine($"var propertyValue = {propertyValueName};");
+			generationContext.CodeWriter.WriteLine(
 				$"var {propertyLengthName} = {lengthAccessor.LengthExpression};"
 			);
 
@@ -87,34 +81,30 @@ partial class ZodSchemaGenerator
 			)
 			{
 				var tooSmallMessage = BuildMessageExpression(
-					generationContext,
+					logger,
 					diagnostics,
-					lengthAttributeData,
+					lengthAttrData,
 					displayName,
-					lengthAttr.ErrorMessage,
-					lengthAttr.ErrorMessageResourceName,
-					lengthAttr.ErrorMessageResourceType,
-					$"{Quote($"Field '{displayName}' must contain at least ")} + FormatCount({lengthAttr.MinimumLength}, {Quote("element")}, {Quote("elements")}) + {Quote(".")}",
-					Quote(displayName),
+					lengthAttr.ValidationAttribute,
+					$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain at least ")} + FormatCount({lengthAttr.MinimumLength}, {CodeGenHelpers.Quote("element")}, {CodeGenHelpers.Quote("elements")}) + {CodeGenHelpers.Quote(".")}",
+					CodeGenHelpers.Quote(displayName),
 					lengthAttr.MaximumLength.ToString(CultureInfo.InvariantCulture),
 					lengthAttr.MinimumLength.ToString(CultureInfo.InvariantCulture)
 				);
 				var tooBigMessage = BuildMessageExpression(
-					generationContext,
+					logger,
 					diagnostics,
-					lengthAttributeData,
+					lengthAttrData,
 					displayName,
-					lengthAttr.ErrorMessage,
-					lengthAttr.ErrorMessageResourceName,
-					lengthAttr.ErrorMessageResourceType,
-					$"{Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({lengthAttr.MaximumLength}, {Quote("element")}, {Quote("elements")}) + {Quote(".")}",
-					Quote(displayName),
+					lengthAttr.ValidationAttribute,
+					$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({lengthAttr.MaximumLength}, {CodeGenHelpers.Quote("element")}, {CodeGenHelpers.Quote("elements")}) + {CodeGenHelpers.Quote(".")}",
+					CodeGenHelpers.Quote(displayName),
 					lengthAttr.MaximumLength.ToString(CultureInfo.InvariantCulture),
 					lengthAttr.MinimumLength.ToString(CultureInfo.InvariantCulture)
 				);
 
 				using (
-					generationContext.Writer.Block(
+					generationContext.CodeWriter.Block(
 						$"if ({propertyLengthName} < {lengthAttr.MinimumLength})"
 					)
 				)
@@ -123,14 +113,14 @@ partial class ZodSchemaGenerator
 						generationContext,
 						"too_small",
 						tooSmallMessage,
-						GetPathFieldName(propertyName),
+						CodeGenHelpers.GetPathFieldName(propertyName),
 						lengthAccessor.Origin,
 						minimum: lengthAttr.MinimumLength
 					);
 				}
 
 				using (
-					generationContext.Writer.Block(
+					generationContext.CodeWriter.Block(
 						$"else if ({propertyLengthName} > {lengthAttr.MaximumLength})"
 					)
 				)
@@ -139,7 +129,7 @@ partial class ZodSchemaGenerator
 						generationContext,
 						"too_big",
 						tooBigMessage,
-						GetPathFieldName(propertyName),
+						CodeGenHelpers.GetPathFieldName(propertyName),
 						lengthAccessor.Origin,
 						maximum: lengthAttr.MaximumLength
 					);
@@ -149,20 +139,18 @@ partial class ZodSchemaGenerator
 			if (minLengthAttr.Exists && minLengthAttr.Length > 0)
 			{
 				var messageExpression = BuildMessageExpression(
-					generationContext,
+					logger,
 					diagnostics,
-					minLengthAttributeData,
+					minLengthAttrData,
 					displayName,
-					minLengthAttr.ErrorMessage,
-					minLengthAttr.ErrorMessageResourceName,
-					minLengthAttr.ErrorMessageResourceType,
-					$"{Quote($"Field '{displayName}' must contain at least ")} + FormatCount({minLengthAttr.Length}, {Quote("element")}, {Quote("elements")}) + {Quote(".")}",
-					Quote(displayName),
+					minLengthAttr.ValidationAttribute,
+					$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain at least ")} + FormatCount({minLengthAttr.Length}, {CodeGenHelpers.Quote("element")}, {CodeGenHelpers.Quote("elements")}) + {CodeGenHelpers.Quote(".")}",
+					CodeGenHelpers.Quote(displayName),
 					minLengthAttr.Length.ToString(CultureInfo.InvariantCulture)
 				);
 
 				using (
-					generationContext.Writer.Block(
+					generationContext.CodeWriter.Block(
 						$"if ({propertyLengthName} < {minLengthAttr.Length})"
 					)
 				)
@@ -171,7 +159,7 @@ partial class ZodSchemaGenerator
 						generationContext,
 						"too_small",
 						messageExpression,
-						GetPathFieldName(propertyName),
+						CodeGenHelpers.GetPathFieldName(propertyName),
 						lengthAccessor.Origin,
 						minimum: minLengthAttr.Length
 					);
@@ -181,20 +169,18 @@ partial class ZodSchemaGenerator
 			if (maxLengthAttr.Exists && maxLengthAttr.Length >= 0)
 			{
 				var messageExpression = BuildMessageExpression(
-					generationContext,
+					logger,
 					diagnostics,
-					maxLengthAttributeData,
+					maxLengthAttrData,
 					displayName,
-					maxLengthAttr.ErrorMessage,
-					maxLengthAttr.ErrorMessageResourceName,
-					maxLengthAttr.ErrorMessageResourceType,
-					$"{Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({maxLengthAttr.Length}, {Quote("element")}, {Quote("elements")}) + {Quote(".")}",
-					Quote(displayName),
+					maxLengthAttr.ValidationAttribute,
+					$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({maxLengthAttr.Length}, {CodeGenHelpers.Quote("element")}, {CodeGenHelpers.Quote("elements")}) + {CodeGenHelpers.Quote(".")}",
+					CodeGenHelpers.Quote(displayName),
 					maxLengthAttr.Length.ToString(CultureInfo.InvariantCulture)
 				);
 
 				using (
-					generationContext.Writer.Block(
+					generationContext.CodeWriter.Block(
 						$"if ({propertyLengthName} > {maxLengthAttr.Length})"
 					)
 				)
@@ -203,7 +189,7 @@ partial class ZodSchemaGenerator
 						generationContext,
 						"too_big",
 						messageExpression,
-						GetPathFieldName(propertyName),
+						CodeGenHelpers.GetPathFieldName(propertyName),
 						lengthAccessor.Origin,
 						maximum: maxLengthAttr.Length
 					);
@@ -211,6 +197,6 @@ partial class ZodSchemaGenerator
 			}
 		}
 
-		generationContext.Writer.WriteLine();
+		generationContext.CodeWriter.WriteLine();
 	}
 }

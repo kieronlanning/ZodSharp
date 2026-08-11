@@ -31,7 +31,7 @@ namespace Testing
 	}
 }";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var modelType = assembly.GetType("Testing.RuntimeModel")!;
@@ -81,7 +81,7 @@ namespace Testing
 	}
 }";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var modelType = assembly.GetType("Testing.MergeModel")!;
@@ -133,7 +133,7 @@ namespace Testing
 	}
 }";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var modelType = assembly.GetType("Testing.BothPassModel")!;
@@ -182,7 +182,7 @@ namespace Testing
 	}
 }";
 
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
 		var modelType = assembly.GetType("Testing.CancellationModel")!;

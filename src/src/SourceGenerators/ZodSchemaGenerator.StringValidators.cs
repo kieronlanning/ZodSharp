@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using System.Globalization;
 using Microsoft.CodeAnalysis;
-using ZodSharp.SourceGenerators.Models;
+using ZodSharp.SourceGenerators.Helpers;
 using ZodSharp.SourceGenerators.Models.DataAttributes;
 
 namespace ZodSharp.SourceGenerators;
@@ -10,25 +10,30 @@ partial class ZodSchemaGenerator
 {
 	static void GenerateStringValidations(
 		GenerationContext generationContext,
+		GenerationLogger? logger,
 		IPropertySymbol property,
 		string propertyName,
 		ImmutableArray<AttributeData> attributes,
 		List<DiagnosticInfo> diagnostics
 	)
 	{
-		StringLengthValidators(generationContext, property, propertyName, attributes, diagnostics);
-
-		var emailAttribute = EmailAddressAttributeData.FromAttributeData(
+		StringLengthValidators(
 			generationContext,
-			attributes
+			logger,
+			property,
+			propertyName,
+			attributes,
+			diagnostics
 		);
+
+		var emailAttribute = EmailAddressAttributeData.FromAttributeData(attributes);
 		if (emailAttribute.Exists)
 		{
 			var errorMessage =
-				$"global::System.String.Format(global::System.Globalization.CultureInfo.CurrentCulture, {Quote(emailAttribute.ErrorMessage ?? "Field '{0}' must be a valid email address")}, {Quote(GetDisplayName(generationContext, property))})";
+				$"global::System.String.Format(global::System.Globalization.CultureInfo.CurrentCulture, {CodeGenHelpers.Quote(emailAttribute.ValidationAttributeData.ErrorMessage ?? "Field '{0}' must be a valid email address")}, {CodeGenHelpers.Quote(GetDisplayName(property))})";
 
 			using (
-				generationContext.Writer.Block(
+				generationContext.CodeWriter.Block(
 					$"if (!global::ZodSharp.Rules.EmailRule.EmailRegex.IsMatch(value.{propertyName}))"
 				)
 			)
@@ -37,50 +42,42 @@ partial class ZodSchemaGenerator
 					generationContext,
 					"invalid_string",
 					errorMessage,
-					GetPathFieldName(propertyName),
+					CodeGenHelpers.GetPathFieldName(propertyName),
 					"string"
 				);
 			}
 
-			generationContext.Writer.WriteLine();
+			generationContext.CodeWriter.WriteLine();
 		}
 
-		var regularExpressionAttributeData = FindAttribute(
+		var regularExpressionAttribute = RegularExpressionAttributeData.FromAttributeData(
 			attributes,
-			generationContext.RegularExpressionAttribute
+			out var regularExpressionAttributeData
 		);
-		var regularExpressionAttribute = regularExpressionAttributeData is null
-			? RegularExpressionAttributeData.Empty
-			: RegularExpressionAttributeData.FromAttributeData(
-				generationContext,
-				regularExpressionAttributeData
-			);
 		if (regularExpressionAttribute.Exists)
 		{
-			var displayName = GetDisplayName(generationContext, property);
-			var propertyValueName = GetLocalIdentifier(propertyName, "Value");
+			var displayName = GetDisplayName(property);
+			var propertyValueName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Value");
 			var messageExpression = BuildMessageExpression(
-				generationContext,
+				logger,
 				diagnostics,
 				regularExpressionAttributeData,
 				displayName,
-				regularExpressionAttribute.ErrorMessage,
-				regularExpressionAttribute.ErrorMessageResourceName,
-				regularExpressionAttribute.ErrorMessageResourceType,
-				Quote(
+				regularExpressionAttribute.ValidationAttribute,
+				CodeGenHelpers.Quote(
 					$"Field '{displayName}' must match the regular expression '{regularExpressionAttribute.Pattern}'."
 				),
-				Quote(displayName),
-				Quote(regularExpressionAttribute.Pattern ?? string.Empty)
+				CodeGenHelpers.Quote(displayName),
+				CodeGenHelpers.Quote(regularExpressionAttribute.Pattern ?? string.Empty)
 			);
 
-			using (generationContext.Writer.Block())
+			using (generationContext.CodeWriter.Block())
 			{
-				generationContext.Writer.WriteLine(
+				generationContext.CodeWriter.WriteLine(
 					$"var {propertyValueName} = value.{propertyName};"
 				);
 				using (
-					generationContext.Writer.Block(
+					generationContext.CodeWriter.Block(
 						$"if ({propertyValueName}.Length != 0 && !{GetRegexFieldName(propertyName)}.IsMatch({propertyValueName}))"
 					)
 				)
@@ -89,33 +86,33 @@ partial class ZodSchemaGenerator
 						generationContext,
 						"invalid_string",
 						messageExpression,
-						GetPathFieldName(propertyName),
+						CodeGenHelpers.GetPathFieldName(propertyName),
 						"string"
 					);
 				}
 			}
 
-			generationContext.Writer.WriteLine();
+			generationContext.CodeWriter.WriteLine();
 		}
 	}
 
 	static void StringLengthValidators(
 		GenerationContext generationContext,
+		GenerationLogger? logger,
 		IPropertySymbol property,
 		string propertyName,
 		ImmutableArray<AttributeData> attributes,
 		List<DiagnosticInfo> diagnostics
 	)
 	{
-		var displayName = GetDisplayName(generationContext, property);
-		var propertyPath = GetPathFieldName(propertyName);
-		var propertyValueName = GetLocalIdentifier(propertyName, "Value");
-		var propertyLengthName = GetLocalIdentifier(propertyName, "Length");
-
-		var lengthAttributeData = FindAttribute(attributes, generationContext.LengthAttribute);
-		var lengthAttr = lengthAttributeData is null
-			? LengthAttributeData.Empty
-			: LengthAttributeData.FromAttributeData(generationContext, lengthAttributeData);
+		var displayName = GetDisplayName(property);
+		var propertyPath = CodeGenHelpers.GetPathFieldName(propertyName);
+		var propertyValueName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Value");
+		var propertyLengthName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Length");
+		var lengthAttr = LengthAttributeData.FromAttributeData(
+			attributes,
+			out var lengthAttributeData
+		);
 		if (lengthAttr.Exists)
 		{
 			if (lengthAttr.MinimumLength < 0)
@@ -132,45 +129,43 @@ partial class ZodSchemaGenerator
 				);
 			else
 			{
-				using (generationContext.Writer.Block())
+				using (generationContext.CodeWriter.Block())
 				{
 					var tooSmallMessage = BuildMessageExpression(
-						generationContext,
+						logger,
 						diagnostics,
 						lengthAttributeData,
 						displayName,
-						lengthAttr.ErrorMessage,
-						lengthAttr.ErrorMessageResourceName,
-						lengthAttr.ErrorMessageResourceType,
-						$"{Quote($"Field '{displayName}' must contain at least ")} + FormatCount({lengthAttr.MinimumLength}, {Quote("character")}, {Quote("characters")}) + {Quote(".")}",
-						Quote(displayName),
+						lengthAttr.ValidationAttribute,
+						$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain at least ")} + FormatCount({lengthAttr.MinimumLength}, {CodeGenHelpers.Quote("character")}, {CodeGenHelpers.Quote("characters")}) + {CodeGenHelpers.Quote(".")}",
+						CodeGenHelpers.Quote(displayName),
 						lengthAttr.MaximumLength.ToString(CultureInfo.InvariantCulture),
 						lengthAttr.MinimumLength.ToString(CultureInfo.InvariantCulture)
 					);
 					var tooBigMessage = BuildMessageExpression(
-						generationContext,
+						logger,
 						diagnostics,
 						lengthAttributeData,
 						displayName,
-						lengthAttr.ErrorMessage,
-						lengthAttr.ErrorMessageResourceName,
-						lengthAttr.ErrorMessageResourceType,
-						$"{Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({lengthAttr.MaximumLength}, {Quote("character")}, {Quote("characters")}) + {Quote(".")}",
-						Quote(displayName),
+						lengthAttr.ValidationAttribute,
+						$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({lengthAttr.MaximumLength}, {CodeGenHelpers.Quote("character")}, {CodeGenHelpers.Quote("characters")}) + {CodeGenHelpers.Quote(".")}",
+						CodeGenHelpers.Quote(displayName),
 						lengthAttr.MaximumLength.ToString(CultureInfo.InvariantCulture),
 						lengthAttr.MinimumLength.ToString(CultureInfo.InvariantCulture)
 					);
 
-					generationContext.Writer.WriteLine(
+					generationContext.CodeWriter.WriteLine(
 						$"var {propertyValueName} = value.{propertyName};"
 					);
-					using (generationContext.Writer.Block($"if ({propertyValueName} is not null)"))
+					using (
+						generationContext.CodeWriter.Block($"if ({propertyValueName} is not null)")
+					)
 					{
-						generationContext.Writer.WriteLine(
+						generationContext.CodeWriter.WriteLine(
 							$"var {propertyLengthName} = {propertyValueName}.Length;"
 						);
 						using (
-							generationContext.Writer.Block(
+							generationContext.CodeWriter.Block(
 								$"if ({propertyLengthName} < {lengthAttr.MinimumLength})"
 							)
 						)
@@ -186,7 +181,7 @@ partial class ZodSchemaGenerator
 						}
 
 						using (
-							generationContext.Writer.Block(
+							generationContext.CodeWriter.Block(
 								$"else if ({propertyLengthName} > {lengthAttr.MaximumLength})"
 							)
 						)
@@ -203,58 +198,51 @@ partial class ZodSchemaGenerator
 					}
 				}
 
-				generationContext.Writer.WriteLine();
+				generationContext.CodeWriter.WriteLine();
 			}
 		}
 
-		var stringLengthAttributeData = FindAttribute(
+		var stringLengthAttr = StringLengthAttribute.FromAttributeData(
 			attributes,
-			generationContext.StringLengthAttribute
+			out var stringLengthAttributeData
 		);
-		var stringLengthAttr = stringLengthAttributeData is null
-			? StringLengthAttribute.Empty
-			: StringLengthAttribute.FromAttributeData(generationContext, stringLengthAttributeData);
 		if (stringLengthAttr.Exists)
 		{
-			using (generationContext.Writer.Block())
+			using (generationContext.CodeWriter.Block())
 			{
 				var tooSmallMessage = BuildMessageExpression(
-					generationContext,
+					logger,
 					diagnostics,
 					stringLengthAttributeData,
 					displayName,
-					stringLengthAttr.ErrorMessage,
-					stringLengthAttr.ErrorMessageResourceName,
-					stringLengthAttr.ErrorMessageResourceType,
-					$"{Quote($"Field '{displayName}' must contain at least ")} + FormatCount({stringLengthAttr.MinimumLength}, {Quote("character")}, {Quote("characters")}) + {Quote(".")}",
-					Quote(displayName),
+					stringLengthAttr.ValidationAttribute,
+					$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain at least ")} + FormatCount({stringLengthAttr.MinimumLength}, {CodeGenHelpers.Quote("character")}, {CodeGenHelpers.Quote("characters")}) + {CodeGenHelpers.Quote(".")}",
+					CodeGenHelpers.Quote(displayName),
 					stringLengthAttr.MaximumLength.ToString(CultureInfo.InvariantCulture),
 					stringLengthAttr.MinimumLength.ToString(CultureInfo.InvariantCulture)
 				);
 				var tooBigMessage = BuildMessageExpression(
-					generationContext,
+					logger,
 					diagnostics,
 					stringLengthAttributeData,
 					displayName,
-					stringLengthAttr.ErrorMessage,
-					stringLengthAttr.ErrorMessageResourceName,
-					stringLengthAttr.ErrorMessageResourceType,
-					$"{Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({stringLengthAttr.MaximumLength}, {Quote("character")}, {Quote("characters")}) + {Quote(".")}",
-					Quote(displayName),
+					stringLengthAttr.ValidationAttribute,
+					$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({stringLengthAttr.MaximumLength}, {CodeGenHelpers.Quote("character")}, {CodeGenHelpers.Quote("characters")}) + {CodeGenHelpers.Quote(".")}",
+					CodeGenHelpers.Quote(displayName),
 					stringLengthAttr.MaximumLength.ToString(CultureInfo.InvariantCulture),
 					stringLengthAttr.MinimumLength.ToString(CultureInfo.InvariantCulture)
 				);
 
-				generationContext.Writer.WriteLine(
+				generationContext.CodeWriter.WriteLine(
 					$"var {propertyValueName} = value.{propertyName};"
 				);
-				generationContext.Writer.WriteLine(
+				generationContext.CodeWriter.WriteLine(
 					$"var {propertyLengthName} = {propertyValueName}.Length;"
 				);
 				if (stringLengthAttr.MinimumLength > 0)
 				{
 					using (
-						generationContext.Writer.Block(
+						generationContext.CodeWriter.Block(
 							$"if ({propertyLengthName} < {stringLengthAttr.MinimumLength})"
 						)
 					)
@@ -271,7 +259,7 @@ partial class ZodSchemaGenerator
 				}
 
 				using (
-					generationContext.Writer.Block(
+					generationContext.CodeWriter.Block(
 						$"if ({propertyLengthName} > {stringLengthAttr.MaximumLength})"
 					)
 				)
@@ -287,41 +275,36 @@ partial class ZodSchemaGenerator
 				}
 			}
 
-			generationContext.Writer.WriteLine();
+			generationContext.CodeWriter.WriteLine();
 		}
 
-		var minLengthAttributeData = FindAttribute(
+		var minLengthAttr = MinLengthAttributeData.FromAttributeData(
 			attributes,
-			generationContext.MinLengthAttribute
+			out var minLengthAttributeData
 		);
-		var minLengthAttr = minLengthAttributeData is null
-			? MinLengthAttributeData.Empty
-			: MinLengthAttributeData.FromAttributeData(generationContext, minLengthAttributeData);
 		if (minLengthAttr.Exists && minLengthAttr.Length > 0)
 		{
-			using (generationContext.Writer.Block())
+			using (generationContext.CodeWriter.Block())
 			{
 				var messageExpression = BuildMessageExpression(
-					generationContext,
+					logger,
 					diagnostics,
 					minLengthAttributeData,
 					displayName,
-					minLengthAttr.ErrorMessage,
-					minLengthAttr.ErrorMessageResourceName,
-					minLengthAttr.ErrorMessageResourceType,
-					$"{Quote($"Field '{displayName}' must contain at least ")} + FormatCount({minLengthAttr.Length}, {Quote("character")}, {Quote("characters")}) + {Quote(".")}",
-					Quote(displayName),
+					minLengthAttr.ValidationAttribute,
+					$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain at least ")} + FormatCount({minLengthAttr.Length}, {CodeGenHelpers.Quote("character")}, {CodeGenHelpers.Quote("characters")}) + {CodeGenHelpers.Quote(".")}",
+					CodeGenHelpers.Quote(displayName),
 					minLengthAttr.Length.ToString(CultureInfo.InvariantCulture)
 				);
 
-				generationContext.Writer.WriteLine(
+				generationContext.CodeWriter.WriteLine(
 					$"var {propertyValueName} = value.{propertyName};"
 				);
-				generationContext.Writer.WriteLine(
+				generationContext.CodeWriter.WriteLine(
 					$"var {propertyLengthName} = {propertyValueName}.Length;"
 				);
 				using (
-					generationContext.Writer.Block(
+					generationContext.CodeWriter.Block(
 						$"if ({propertyLengthName} < {minLengthAttr.Length})"
 					)
 				)
@@ -337,41 +320,36 @@ partial class ZodSchemaGenerator
 				}
 			}
 
-			generationContext.Writer.WriteLine();
+			generationContext.CodeWriter.WriteLine();
 		}
 
-		var maxLengthAttributeData = FindAttribute(
+		var maxLengthAttr = MaxLengthAttributeData.FromAttributeData(
 			attributes,
-			generationContext.MaxLengthAttribute
+			out var maxLengthAttributeData
 		);
-		var maxLengthAttr = maxLengthAttributeData is null
-			? MaxLengthAttributeData.Empty
-			: MaxLengthAttributeData.FromAttributeData(generationContext, maxLengthAttributeData);
 		if (maxLengthAttr.Exists && maxLengthAttr.Length >= 0)
 		{
-			using (generationContext.Writer.Block())
+			using (generationContext.CodeWriter.Block())
 			{
 				var messageExpression = BuildMessageExpression(
-					generationContext,
+					logger,
 					diagnostics,
 					maxLengthAttributeData,
 					displayName,
-					maxLengthAttr.ErrorMessage,
-					maxLengthAttr.ErrorMessageResourceName,
-					maxLengthAttr.ErrorMessageResourceType,
-					$"{Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({maxLengthAttr.Length}, {Quote("character")}, {Quote("characters")}) + {Quote(".")}",
-					Quote(displayName),
+					maxLengthAttr.ValidationAttribute,
+					$"{CodeGenHelpers.Quote($"Field '{displayName}' must contain no more than ")} + FormatCount({maxLengthAttr.Length}, {CodeGenHelpers.Quote("character")}, {CodeGenHelpers.Quote("characters")}) + {CodeGenHelpers.Quote(".")}",
+					CodeGenHelpers.Quote(displayName),
 					maxLengthAttr.Length.ToString(CultureInfo.InvariantCulture)
 				);
 
-				generationContext.Writer.WriteLine(
+				generationContext.CodeWriter.WriteLine(
 					$"var {propertyValueName} = value.{propertyName};"
 				);
-				generationContext.Writer.WriteLine(
+				generationContext.CodeWriter.WriteLine(
 					$"var {propertyLengthName} = {propertyValueName}.Length;"
 				);
 				using (
-					generationContext.Writer.Block(
+					generationContext.CodeWriter.Block(
 						$"if ({propertyLengthName} > {maxLengthAttr.Length})"
 					)
 				)
@@ -387,7 +365,7 @@ partial class ZodSchemaGenerator
 				}
 			}
 
-			generationContext.Writer.WriteLine();
+			generationContext.CodeWriter.WriteLine();
 		}
 	}
 }

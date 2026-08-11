@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -72,8 +73,19 @@ static class SourceGenLibrary
 		)
 			return GeneratorResult<ZodSchemaDescriptor>.Empty;
 
-		ZodSchemaDescriptor result = new(symbol, []);
+		ZodSchemaDescriptor result = new(symbol, new(symbol), GetZodProperties(symbol));
 
 		return GeneratorResult<ZodSchemaDescriptor>.Ok(result);
+	}
+
+	public static ImmutableArray<ZodPropertyDescriptor> GetZodProperties(INamedTypeSymbol symbol)
+	{
+		var properties = symbol
+			.GetMembers()
+			.OfType<IPropertySymbol>()
+			.Where(p => p.DeclaredAccessibility == Accessibility.Public)
+			.Select(p => new ZodPropertyDescriptor(p));
+
+		return [.. properties];
 	}
 }

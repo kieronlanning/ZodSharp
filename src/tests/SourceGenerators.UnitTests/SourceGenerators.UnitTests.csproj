@@ -5,5 +5,12 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\ZodSharp\ZodSharp.csproj" />
+		<!-- Reference the analyzer output as a normal reference so the test code can use HostKitGenerator. -->
+		<ProjectReference
+			Include="..\..\src\SourceGenerators\SourceGenerators.csproj"
+			ReferenceOutputAssembly="false"
+			PrivateAssets="all"
+		/>
+		<Reference Include="..\..\src\SourceGenerators\bin\$(Configuration)\netstandard2.0\ZodSharp.SourceGeneration.dll" />
 	</ItemGroup>
 </Project>

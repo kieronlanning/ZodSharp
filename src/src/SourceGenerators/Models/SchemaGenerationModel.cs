@@ -26,6 +26,9 @@ sealed record class SchemaGenerationContext : GenerationContext
 }
 
 readonly record struct ZodSchemaDescriptor(
-	ISymbol Symbol,
+	INamedTypeSymbol Symbol,
+	TypeValueObject SchemaType,
 	ImmutableArray<ZodPropertyDescriptor> Properties
 );
+
+readonly record struct ZodPropertyDescriptor(IPropertySymbol Symbol);

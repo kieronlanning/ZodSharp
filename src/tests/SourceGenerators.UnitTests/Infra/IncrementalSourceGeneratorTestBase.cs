@@ -1,8 +1,7 @@
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.CodeAnalysis;
-using Purview.SourceGenerators.Testing;
-using Purview.SourceGenerators.Testing.TUnit;
+using Purview.SourceGeneratorFramework.Testing;
 using ZodSharp.SourceGenerators.Helpers;
 
 namespace ZodSharp.SourceGenerators.Infra;
@@ -32,30 +31,46 @@ public abstract class IncrementalSourceGeneratorTestBase<TGenerator>(bool throwO
 	public const int HintNameHashHexLength = 16;
 	public const string GeneratedSourceFileSuffix = ".g.cs";
 
-	protected async Task<DriverRunResult> GenerateAsync(
+	protected async Task<DriverRunResult> GenerateZodAsync(
 		string source,
 		CancellationToken cancellationToken
-	) => await GenerateAsync(source, GenerationDriverContext.Default, cancellationToken);
+	) => await GenerateZodAsync(source, GenerationDriverContext.Default, cancellationToken);
 
-	protected async Task<DriverRunResult> GenerateAsync(
+	protected override async Task OnAfterRunAsync(
+		DriverRunResult result,
+		IEnumerable<string> sources,
+		SourceGeneratorTestOptions options,
+		CancellationToken cancellationToken
+	)
+	{
+		var context = (GenerationDriverContext)options.State!;
+		if (context.EnsureValid)
+			result.EnsureValid();
+
+		if (context.ValidateNoErrorDiagnostics)
+			await Assert.That(result).HasNoErrorDiagnostics();
+	}
+
+	protected async Task<DriverRunResult> GenerateZodAsync(
 		string source,
 		GenerationDriverContext driverContext,
 		CancellationToken cancellationToken
 	)
 	{
-		var options = new SourceGeneratorTestOptions
+		SourceGeneratorTestOptions options = new()
 		{
 			IncludeDefaultNamespaces = driverContext.IncludeNamespaces,
-			AdditionalNamespaces = ["ZodSharp"],
+			AdditionalNamespaces = [TypeLibrary.ZodSharpNamespace],
 			AdditionalAssemblyTypes = ImmutableArray.Create(DefaultAssemblyTypes),
 			ThrowOnGenerationException = driverContext.ThrowOnGenerationException,
 			CompileToAssembly = driverContext.CompileToAssembly,
 			ThrowOnLogError = throwOnLogError,
 			DisableSourceGeneratorPropertyName =
-				SourceGenLibrary.DisableZodSharpSourceGeneratorProperty,
+				PropertyLibrary.DisableZodSharpSourceGeneratorProperty,
 			DisableSourceGeneratorValue = driverContext.DisableSourceGenerator,
 			PreprocessReferences = driverContext.PreprocessReferences,
 			ExcludeGeneratedAttributes = ImmutableArray.Create(GeneratedAttributes),
+			State = driverContext,
 		};
 
 		return await GenerateAsync(source, options, cancellationToken);

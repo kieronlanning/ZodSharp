@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis;
 
 namespace ZodSharp.SourceGenerators.Models;
 
@@ -168,20 +167,4 @@ static class GeneratorDiagnostics
 		defaultSeverity: DiagnosticSeverity.Error,
 		isEnabledByDefault: true
 	);
-
-	public static DiagnosticInfo Create(
-		DiagnosticDescriptor diagnostic,
-		INamedTypeSymbol? symbol = null,
-		TypeDeclarationSyntax? declaration = null,
-		SyntaxNode? locationNode = null
-	)
-	{
-		var messageArgs = symbol is not null ? new[] { symbol.Name } : [];
-
-		return DiagnosticInfo.Create(
-			diagnostic,
-			locationNode?.GetLocation() ?? declaration?.Identifier.GetLocation(),
-			messageArgs
-		);
-	}
 }

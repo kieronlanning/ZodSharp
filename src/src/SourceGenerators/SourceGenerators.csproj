@@ -2,13 +2,18 @@
 	<PropertyGroup>
 		<TargetFrameworks></TargetFrameworks>
 		<TargetFramework>netstandard2.0</TargetFramework>
-		<IsPackable>false</IsPackable>
-		<EmbedUntrackedSources>false</EmbedUntrackedSources>
-		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+		<DisableSourceLink>true</DisableSourceLink>
+		<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
 		<IsRoslynComponent>true</IsRoslynComponent>
+		<!-- snupkg requires standard build output, which this analyzer package suppresses. -->
+		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
+		<TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);PackSourceGeneratorSymbols</TargetsForTfmSpecificDebugSymbolsInPackage>
+		<!-- Exclude Purview.Telemetry.SourceGenerator since this is a netstandard2.0 analyzer project -->
+		<ExcludePurviewTelemetry>true</ExcludePurviewTelemetry>
 		<AssemblyName>ZodSharp.SourceGeneration</AssemblyName>
-		<NoWarn>$(NoWarn);CS1591;</NoWarn>
+		<IncludeBuildOutput>false</IncludeBuildOutput>
+		<!--<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>-->
 	</PropertyGroup>
 
 	<ItemGroup Label="Analyzer Release Files">

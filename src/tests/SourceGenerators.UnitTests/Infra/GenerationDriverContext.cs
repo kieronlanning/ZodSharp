@@ -8,6 +8,8 @@ public sealed record GenerationDriverContext(
 	bool ThrowOnGenerationException = true,
 	bool? DisableSourceGenerator = null,
 	bool CompileToAssembly = true,
+	bool ValidateNoErrorDiagnostics = true,
+	bool EnsureValid = true,
 	Action<ImmutableArray<MetadataReference>>? PreprocessReferences = null
 )
 {
@@ -29,4 +31,8 @@ public sealed record GenerationDriverContext(
 	);
 
 	public static readonly GenerationDriverContext NoNamespaces = new(IncludeNamespaces: false);
+
+	public static readonly GenerationDriverContext IgnoreDiagnostic = new(
+		ValidateNoErrorDiagnostics: false
+	);
 }

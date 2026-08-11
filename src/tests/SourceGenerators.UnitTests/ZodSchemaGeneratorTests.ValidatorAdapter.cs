@@ -19,11 +19,9 @@ namespace Testing
         public string? Name { get; set; }
     }
 }";
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var generatedSource = GetSchemaGeneratedSource(driverResult, "WidgetSchema");
 
-		await AssertNoGeneratorExceptions(driverResult);
-		await AssertNoCompilationErrors(driverResult, cancellationToken);
 		await Assert.That(generatedSource).Contains("class WidgetSchemaValidator");
 		await Assert.That(generatedSource).Contains("IZodSchemaValidator");
 		await Assert.That(generatedSource).Contains("Widget");
@@ -43,14 +41,11 @@ namespace Testing
     [ZodSchema]
     public class Gadget { }
 }";
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var allGenerated = string.Join(
 			"\n",
 			driverResult.SyntaxTrees.Select(static t => t.GetText().ToString())
 		);
-
-		await AssertNoGeneratorExceptions(driverResult);
-		await AssertNoCompilationErrors(driverResult, cancellationToken);
 
 		await Assert.That(allGenerated).Contains("ZodSchemaGenerated");
 		await Assert.That(allGenerated).Contains("Gadget");
@@ -71,11 +66,8 @@ namespace Testing
         public string? Name { get; set; }
     }
 }";
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var generatedSource = GetSchemaGeneratedSource(driverResult, "GizmoSchema");
-
-		await AssertNoGeneratorExceptions(driverResult);
-		await AssertNoCompilationErrors(driverResult, cancellationToken);
 
 		await Assert.That(generatedSource).Contains("ValidateAsync");
 		await Assert.That(generatedSource).Contains("ValueTask");
@@ -111,12 +103,10 @@ namespace Testing
 			}}
 		}}
 	}}";
-		var driverResult = await GenerateAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
 		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
 
-		await AssertNoGeneratorExceptions(driverResult);
-		await AssertNoCompilationErrors(driverResult, cancellationToken);
-		await AssertNoDiagnostics(driverResult);
+		await Assert.That(driverResult).HasNoErrorDiagnostics();
 
 		var gizmoType = assembly.GetType("Testing.Gizmo");
 		var gizmoSchemaType = assembly.GetType("Testing.GizmoSchemaValidator");
