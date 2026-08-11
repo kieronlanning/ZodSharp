@@ -37,22 +37,24 @@
 		/>
 	</ItemGroup>
 
-	<Target
-		Name="IncludeZodSharpSourceGenerator"
-		DependsOnTargets="Build"
-		Condition="'$(TargetFramework)' == 'net8.0'"
-	>
+	<Target Name="IncludeZodSharpSourceGenerator">
 		<Error
 			Condition="!Exists('$(ZodSharpSourceGeneratorAssembly)')"
 			Text="The ZodSharp source generator was not found at '$(ZodSharpSourceGeneratorAssembly)'."
 		/>
 
+		<MSBuild
+			Projects="$(ZodSharpSourceGeneratorProject)"
+			Targets="GetSourceGeneratorAnalyzerFiles"
+			Properties="Configuration=$(Configuration);TargetFramework=$(ZodSharpSourceGeneratorTargetFramework)"
+		>
+			<Output TaskParameter="TargetOutputs" ItemName="_ZodSharpSourceGeneratorFiles" />
+		</MSBuild>
+
 		<ItemGroup>
-			<None
-				Include="$(ZodSharpSourceGeneratorAssembly)"
-				Pack="true"
+			<TfmSpecificPackageFile
+				Include="@(_ZodSharpSourceGeneratorFiles)"
 				PackagePath="analyzers/dotnet/cs/"
-				Visible="false"
 			/>
 		</ItemGroup>
 	</Target>
