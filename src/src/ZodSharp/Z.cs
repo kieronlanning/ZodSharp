@@ -165,22 +165,4 @@ public static class Z
 		IZodSchema<T, T> schema,
 		ToJsonSchemaOptions? options = null
 	) => ToJsonSchemaConverter.Convert(schema, options);
-
-	/// <summary>
-	/// Creates a ZodSharp schema from a JSON Schema definition.
-	/// Enables consuming schemas defined in TypeScript Zod.
-	/// </summary>
-	public static IZodSchema<object, object> FromJsonSchema(
-		JsonSchemaDefinition schema,
-		FromJsonSchemaOptions? options = null
-	) => FromJsonSchemaParser.Parse(schema, options);
-
-	/// <summary>
-	/// Creates a ZodSharp schema from a JSON Schema string.
-	/// Enables consuming schemas defined in TypeScript Zod via JSON files or APIs.
-	/// </summary>
-	public static IZodSchema<object, object> FromJsonSchema(
-		string jsonSchema,
-		FromJsonSchemaOptions? options = null
-	) => FromJsonSchemaParser.Parse(jsonSchema, options);
 }

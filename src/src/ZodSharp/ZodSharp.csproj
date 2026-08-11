@@ -66,6 +66,5 @@
 			Include="Microsoft.Extensions.DependencyInjection.Abstractions"
 			VersionOverride="$(MicrosoftExtensionsDependencyInjectionAbstractionsVersion)"
 		/>
-		<PackageReference Include="Newtonsoft.Json" />
 	</ItemGroup>
 </Project>
