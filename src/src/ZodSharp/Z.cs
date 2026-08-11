@@ -1,4 +1,5 @@
 using ZodSharp.Core;
+using ZodSharp.JsonSchema;
 using ZodSharp.Schemas;
 
 namespace ZodSharp;
@@ -155,4 +156,31 @@ public static class Z
 		IZodSchema<T2, T2> schema2,
 		IZodSchema<T3, T3> schema3
 	) => new(schema1, schema2, schema3);
+
+	/// <summary>
+	/// Converts a ZodSharp schema to JSON Schema (Draft 2020-12).
+	/// Enables cross-platform schema sharing with TypeScript Zod.
+	/// </summary>
+	public static JsonSchemaDefinition ToJsonSchema<T>(
+		IZodSchema<T, T> schema,
+		ToJsonSchemaOptions? options = null
+	) => ToJsonSchemaConverter.Convert(schema, options);
+
+	/// <summary>
+	/// Creates a ZodSharp schema from a JSON Schema definition.
+	/// Enables consuming schemas defined in TypeScript Zod.
+	/// </summary>
+	public static IZodSchema<object, object> FromJsonSchema(
+		JsonSchemaDefinition schema,
+		FromJsonSchemaOptions? options = null
+	) => FromJsonSchemaParser.Parse(schema, options);
+
+	/// <summary>
+	/// Creates a ZodSharp schema from a JSON Schema string.
+	/// Enables consuming schemas defined in TypeScript Zod via JSON files or APIs.
+	/// </summary>
+	public static IZodSchema<object, object> FromJsonSchema(
+		string jsonSchema,
+		FromJsonSchemaOptions? options = null
+	) => FromJsonSchemaParser.Parse(jsonSchema, options);
 }
