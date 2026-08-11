@@ -22,7 +22,7 @@ public abstract class IncrementalSourceGeneratorTestBase<TGenerator>(bool throwO
 	public static readonly string[] GeneratedAttributes =
 	[
 		"EmbeddedAttribute.cs",
-		"ZodSchema.g.cs",
+		"ZodSchemaAttribute.g.cs",
 	];
 
 	public static readonly int ExpectedFileCount = GeneratedAttributes.Length;

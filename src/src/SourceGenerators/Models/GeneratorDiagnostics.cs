@@ -167,4 +167,13 @@ static class GeneratorDiagnostics
 		defaultSeverity: DiagnosticSeverity.Error,
 		isEnabledByDefault: true
 	);
+
+	public static readonly DiagnosticDescriptor ComparePropertyNotFound = new(
+		id: "ZODSGEN020",
+		title: "Compare property not found",
+		messageFormat: "CompareAttribute on '{0}' references unknown property '{1}'",
+		category: Category,
+		defaultSeverity: DiagnosticSeverity.Error,
+		isEnabledByDefault: true
+	);
 }

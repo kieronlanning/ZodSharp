@@ -120,6 +120,39 @@ public class ZodString : ZodType<string>
 	}
 
 	/// <summary>
+	/// Adds a phone number format validation.
+	/// </summary>
+	/// <param name="message">Optional error message</param>
+	/// <returns>This schema for method chaining</returns>
+	public ZodString Phone(string? message = null)
+	{
+		AddRule(new PhoneRule(message));
+		return this;
+	}
+
+	/// <summary>
+	/// Adds a credit card number format validation.
+	/// </summary>
+	/// <param name="message">Optional error message</param>
+	/// <returns>This schema for method chaining</returns>
+	public ZodString CreditCard(string? message = null)
+	{
+		AddRule(new CreditCardRule(message));
+		return this;
+	}
+
+	/// <summary>
+	/// Adds a Base64 string format validation.
+	/// </summary>
+	/// <param name="message">Optional error message</param>
+	/// <returns>This schema for method chaining</returns>
+	public ZodString Base64String(string? message = null)
+	{
+		AddRule(new Base64StringRule(message));
+		return this;
+	}
+
+	/// <summary>
 	/// Adds a UUID format validation.
 	/// </summary>
 	/// <param name="message">Optional error message</param>

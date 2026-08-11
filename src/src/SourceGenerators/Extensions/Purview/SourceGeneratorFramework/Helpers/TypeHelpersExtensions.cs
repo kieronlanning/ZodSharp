@@ -36,7 +36,6 @@ static class TypeHelpersExtensions
 			return symbol.DeclaredAccessibility switch
 			{
 				Accessibility.Public => "public",
-				Accessibility.Private => "private",
 				_ => "internal",
 			};
 		}
@@ -120,6 +119,9 @@ static class TypeHelpersExtensions
 				} nullableType
 				? nullableType.TypeArguments[0]
 				: type;
+
+		public static ITypeSymbol StripNullableAnnotations(ITypeSymbol type) =>
+			UnwrapNullableType(type).WithNullableAnnotation(NullableAnnotation.None);
 #pragma warning restore format
 
 		public static bool IsSameType(
@@ -150,5 +152,12 @@ static class TypeHelpersExtensions
 			IEnumerable<AttributeData> attributes,
 			TypeValueObject attribute
 		) => attributes.Any(attribute.Equals);
+
+		public static bool IsOrImplements(ITypeSymbol type, TypeValueObject interfaceType)
+		{
+			var unwrapped = StripNullableAnnotations(type);
+			return TypeHelpers.IsNamedType(unwrapped, interfaceType.SymbolFullName)
+				|| TypeHelpers.Implements(unwrapped, interfaceType);
+		}
 	}
 }

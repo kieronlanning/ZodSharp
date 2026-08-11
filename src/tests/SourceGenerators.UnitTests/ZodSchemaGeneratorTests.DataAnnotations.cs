@@ -574,6 +574,243 @@ namespace Testing
 			.HasDiagnostic(GeneratorDiagnostics.InvalidDataAnnotationsErrorMessage);
 	}
 
+	[Test]
+	public async Task Generate_GivenStringFormatDataAnnotations_UsesExpectedGeneratedShapes(
+		CancellationToken cancellationToken
+	)
+	{
+		const string source =
+			@"
+using System.ComponentModel.DataAnnotations;
+
+namespace Testing
+{
+	[ZodSchema]
+	public sealed class StringFormatModel
+	{
+		[Url]
+		public string? Website { get; set; }
+
+		[Phone]
+		public string? PhoneNumber { get; set; }
+
+		[CreditCard]
+		public string? CardNumber { get; set; }
+
+		[Base64String]
+		public string? Encoded { get; set; }
+
+		[Compare(nameof(Password))]
+		public string? ConfirmPassword { get; set; }
+
+		public string? Password { get; set; }
+	}
+}
+";
+
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
+		var generatedSource = GetSchemaGeneratedSource(driverResult, "StringFormatModelSchema");
+
+		await Assert
+			.That(generatedSource)
+			.Contains("new global::ZodSharp.Rules.UrlRule().IsValid(websiteValue)");
+		await Assert
+			.That(generatedSource)
+			.Contains("new global::ZodSharp.Rules.PhoneRule().IsValid(phoneNumberValue)");
+		await Assert
+			.That(generatedSource)
+			.Contains("new global::ZodSharp.Rules.CreditCardRule().IsValid(cardNumberValue)");
+		await Assert
+			.That(generatedSource)
+			.Contains("new global::ZodSharp.Rules.Base64StringRule().IsValid(encodedValue)");
+		await Assert
+			.That(generatedSource)
+			.Contains(
+				"EqualityComparer<object>.Default.Equals(value.ConfirmPassword, value.Password)"
+			);
+	}
+
+	[Test]
+	public async Task GeneratedValidate_GivenStringFormatDataAnnotations_ProducesExpectedValidationResults(
+		CancellationToken cancellationToken
+	)
+	{
+		const string source =
+			@"
+using System.ComponentModel.DataAnnotations;
+
+namespace Testing
+{
+	[ZodSchema]
+	public sealed class StringFormatRuntimeModel
+	{
+		[Url]
+		public string? Website { get; set; }
+
+		[Phone]
+		public string? PhoneNumber { get; set; }
+
+		[CreditCard]
+		public string? CardNumber { get; set; }
+
+		[Base64String]
+		public string? Encoded { get; set; }
+
+		[Compare(nameof(Password))]
+		public string? ConfirmPassword { get; set; }
+
+		public string? Password { get; set; }
+	}
+}
+";
+
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
+		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
+
+		var modelType = assembly.GetType("Testing.StringFormatRuntimeModel")!;
+		var model = Activator.CreateInstance(modelType)!;
+		modelType.GetProperty("Website")!.SetValue(model, "not-a-url");
+		modelType.GetProperty("PhoneNumber")!.SetValue(model, "not-a-phone");
+		modelType.GetProperty("CardNumber")!.SetValue(model, "not-a-card");
+		modelType.GetProperty("Encoded")!.SetValue(model, "not-base64!");
+		modelType.GetProperty("Password")!.SetValue(model, "secret");
+		modelType.GetProperty("ConfirmPassword")!.SetValue(model, "different");
+
+		var result = InvokeValidate(assembly, model, "Testing.StringFormatRuntimeModelSchema");
+		var errors = (System.Collections.Immutable.ImmutableArray<Core.ValidationError>)
+			result.GetType().GetProperty("Errors")!.GetValue(result)!;
+
+		await Assert
+			.That((bool)result.GetType().GetProperty("IsSuccess")!.GetValue(result)!)
+			.IsFalse();
+		await Assert.That(errors.Any(e => e.Path.Contains("Website"))).IsTrue();
+		await Assert.That(errors.Any(e => e.Path.Contains("PhoneNumber"))).IsTrue();
+		await Assert.That(errors.Any(e => e.Path.Contains("CardNumber"))).IsTrue();
+		await Assert.That(errors.Any(e => e.Path.Contains("Encoded"))).IsTrue();
+		await Assert.That(errors.Any(e => e.Path.Contains("ConfirmPassword"))).IsTrue();
+	}
+
+	[Test]
+	public async Task GeneratedValidate_GivenStringFormatDataAnnotationsWithValidValues_ReturnsSuccess(
+		CancellationToken cancellationToken
+	)
+	{
+		const string source =
+			@"
+using System.ComponentModel.DataAnnotations;
+
+namespace Testing
+{
+	[ZodSchema]
+	public sealed class StringFormatValidModel
+	{
+		[Url]
+		public string? Website { get; set; }
+
+		[Phone]
+		public string? PhoneNumber { get; set; }
+
+		[CreditCard]
+		public string? CardNumber { get; set; }
+
+		[Base64String]
+		public string? Encoded { get; set; }
+
+		[Compare(nameof(Password))]
+		public string? ConfirmPassword { get; set; }
+
+		public string? Password { get; set; }
+	}
+}
+";
+
+		var driverResult = await GenerateZodAsync(source, cancellationToken);
+		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
+
+		var modelType = assembly.GetType("Testing.StringFormatValidModel")!;
+		var model = Activator.CreateInstance(modelType)!;
+		modelType.GetProperty("Website")!.SetValue(model, "https://example.com");
+		modelType.GetProperty("PhoneNumber")!.SetValue(model, "+1 555 123 4567");
+		modelType.GetProperty("CardNumber")!.SetValue(model, "4532015112830366");
+		modelType.GetProperty("Encoded")!.SetValue(model, "SGVsbG8gV29ybGQ=");
+		modelType.GetProperty("Password")!.SetValue(model, "secret");
+		modelType.GetProperty("ConfirmPassword")!.SetValue(model, "secret");
+
+		var result = InvokeValidate(assembly, model, "Testing.StringFormatValidModelSchema");
+		await Assert
+			.That((bool)result.GetType().GetProperty("IsSuccess")!.GetValue(result)!)
+			.IsTrue();
+	}
+
+	[Test]
+	public async Task Generate_GivenStringOnlyDataAnnotationsOnNonStringTargets_ReportsDiagnostics(
+		CancellationToken cancellationToken
+	)
+	{
+		const string source =
+			@"
+using System.ComponentModel.DataAnnotations;
+
+namespace Testing
+{
+	[ZodSchema]
+	public sealed class UnsupportedStringFormatModel
+	{
+		[Url]
+		public int Website { get; set; }
+
+		[Phone]
+		public int PhoneNumber { get; set; }
+
+		[CreditCard]
+		public int CardNumber { get; set; }
+
+		[Base64String]
+		public int Encoded { get; set; }
+	}
+}
+";
+
+		var driverResult = await GenerateZodAsync(
+			source,
+			GenerationDriverContext.IgnoreDiagnostic,
+			cancellationToken
+		);
+
+		await Assert
+			.That(driverResult.Result.Diagnostics.Count(static d => d.Id == "ZODSGEN006"))
+			.IsEqualTo(4);
+	}
+
+	[Test]
+	public async Task Generate_GivenCompareAttributeWithMissingProperty_ReportsDiagnostic(
+		CancellationToken cancellationToken
+	)
+	{
+		const string source =
+			@"
+using System.ComponentModel.DataAnnotations;
+
+namespace Testing
+{
+	[ZodSchema]
+	public sealed class CompareMissingModel
+	{
+		[Compare(""MissingProperty"")]
+		public string? Password { get; set; }
+	}
+}
+";
+
+		var driverResult = await GenerateZodAsync(
+			source,
+			GenerationDriverContext.IgnoreDiagnostic,
+			cancellationToken
+		);
+
+		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.ComparePropertyNotFound);
+	}
+
 	const string UserSource =
 		@"
 using System.ComponentModel.DataAnnotations;

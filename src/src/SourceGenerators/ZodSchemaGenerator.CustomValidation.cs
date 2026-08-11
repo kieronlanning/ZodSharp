@@ -106,7 +106,6 @@ partial class ZodSchemaGenerator
 		{
 			var (isValid, candidateDiagnostics) = ValidateMethodSignature(
 				candidate,
-				validationMethodClassSymbol,
 				classSymbol,
 				invocationKind
 			);
@@ -209,13 +208,12 @@ partial class ZodSchemaGenerator
 
 	static (bool IsValid, List<DiagnosticInfo> Diagnostics) ValidateMethodSignature(
 		IMethodSymbol method,
-		INamedTypeSymbol validationClassSymbol,
 		INamedTypeSymbol classSymbol,
 		CustomValidationInvocationKind invocationKind
 	)
 	{
 		var diagnostics = new List<DiagnosticInfo>();
-		var typeName = validationClassSymbol.Name;
+		var typeName = classSymbol.Name;
 		var methodLocation = method.Locations.Length > 0 ? method.Locations[0] : null;
 		var comparer = SymbolEqualityComparer.Default;
 
@@ -349,7 +347,11 @@ partial class ZodSchemaGenerator
 
 		// Return type must be ValueTask<ValidationResult<T>>.
 		var expectedReturnType = GetExpectedReturnType(classSymbol);
-		if (expectedReturnType.Equals(method.ReturnType))
+		var expectedReturnTypeName = expectedReturnType.ToString();
+		var actualReturnTypeName = method.ReturnType.ToDisplayString(
+			SymbolDisplayFormat.FullyQualifiedFormat
+		);
+		if (!string.Equals(expectedReturnTypeName, actualReturnTypeName, StringComparison.Ordinal))
 		{
 			diagnostics.Add(
 				DiagnosticInfo.Create(
@@ -386,7 +388,11 @@ partial class ZodSchemaGenerator
 	/// from the compilation's framework symbols.
 	/// </summary>
 	static TypeValueObject GetExpectedReturnType(INamedTypeSymbol classSymbol) =>
-		TypeLibrary.ValueTask.MakeGeneric(new TypeValueObject(classSymbol));
+		TypeLibrary.ValueTask.MakeGeneric(
+			TypeLibrary.ValidationResult.MakeGeneric(
+				classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+			)
+		);
 
 	static bool IsValidIdentifier(string name) =>
 		!string.IsNullOrWhiteSpace(name) && SyntaxFacts.IsValidIdentifier(name);

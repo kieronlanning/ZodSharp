@@ -34,14 +34,14 @@ partial class ZodSchemaGenerator
 		if (TypeHelpers.HasAccessibleCountProperty(propertyType))
 			return new("propertyValue.Count", "collection", true);
 
-		if (TypeHelpers.Implements(propertyType, TypeLibrary.Collections.IEnumerableT))
+		if (TypeHelpers.IsOrImplements(propertyType, TypeLibrary.Collections.IEnumerableT))
 			return new(
 				"global::ZodSharp.Optimizations.CollectionCountHelper.GetCount(propertyValue)",
 				"collection",
 				true
 			);
 
-		if (TypeHelpers.Implements(propertyType, TypeLibrary.Collections.IEnumerable))
+		if (TypeHelpers.IsOrImplements(propertyType, TypeLibrary.Collections.IEnumerable))
 			return new(
 				"global::ZodSharp.Optimizations.CollectionCountHelper.GetCount(propertyValue)",
 				"collection",

@@ -354,7 +354,11 @@ namespace Testing
 	}
 }";
 
-		var driverResult = await GenerateZodAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(
+			source,
+			GenerationDriverContext.IgnoreDiagnostic,
+			cancellationToken
+		);
 		await Assert
 			.That(driverResult)
 			.HasDiagnostic(GeneratorDiagnostics.CustomValidationInaccessible);
@@ -484,7 +488,11 @@ namespace Testing
 
 		// The first has wrong return type, the second has 3 params (wrong count).
 		// Neither is valid — should get diagnostics but no ambiguity.
-		var driverResult = await GenerateZodAsync(source, cancellationToken);
+		var driverResult = await GenerateZodAsync(
+			source,
+			GenerationDriverContext.IgnoreDiagnostic,
+			cancellationToken
+		);
 
 		await Assert
 			.That(driverResult)

@@ -241,8 +241,11 @@ partial class ZodSchemaGenerator
 					{
 						IsPartial = true,
 						IsStatic = true,
-						Accessibility =
-							classSymbol.DeclaredAccessibility.ToTypeDeclarationAccessibility(),
+						Accessibility = classSymbol.ContainingType is null
+							? classSymbol.DeclaredAccessibility == Accessibility.Public
+								? TypeDeclarationAccessibility.Public
+								: TypeDeclarationAccessibility.Internal
+							: classSymbol.DeclaredAccessibility.ToTypeDeclarationAccessibility(),
 					}
 				)
 			)
@@ -621,6 +624,16 @@ partial class ZodSchemaGenerator
 
 		block?.Dispose();
 
+		GenerateCompareValidation(
+			generationContext,
+			logger,
+			property,
+			property.ContainingType,
+			attributes,
+			propertyName,
+			diagnostics
+		);
+
 		generationContext.CodeWriter.WriteLine();
 	}
 
@@ -639,8 +652,8 @@ partial class ZodSchemaGenerator
 		var supportsLengthAttribute =
 			propertyType.SpecialType == SpecialType.System_String
 			|| propertyType is IArrayTypeSymbol
-			|| TypeHelpers.Implements(propertyType, TypeLibrary.Collections.IEnumerable)
-			|| TypeHelpers.Implements(propertyType, TypeLibrary.Collections.IEnumerableT);
+			|| TypeHelpers.IsOrImplements(propertyType, TypeLibrary.Collections.IEnumerable)
+			|| TypeHelpers.IsOrImplements(propertyType, TypeLibrary.Collections.IEnumerableT);
 
 		if (lengthAttributeData is not null && !supportsLengthAttribute)
 		{
@@ -670,6 +683,42 @@ partial class ZodSchemaGenerator
 					propertyName,
 					propertyType.ToDisplayString()
 				)
+			);
+		}
+
+		if (propertyType.SpecialType != SpecialType.System_String)
+		{
+			CheckUnsupportedStringOnlyAttribute(
+				diagnostics,
+				attributes,
+				propertyName,
+				propertyType,
+				TypeLibrary.DataAnnotations.UrlAttribute,
+				nameof(TypeLibrary.DataAnnotations.UrlAttribute)
+			);
+			CheckUnsupportedStringOnlyAttribute(
+				diagnostics,
+				attributes,
+				propertyName,
+				propertyType,
+				TypeLibrary.DataAnnotations.PhoneAttribute,
+				nameof(TypeLibrary.DataAnnotations.PhoneAttribute)
+			);
+			CheckUnsupportedStringOnlyAttribute(
+				diagnostics,
+				attributes,
+				propertyName,
+				propertyType,
+				TypeLibrary.DataAnnotations.CreditCardAttribute,
+				nameof(TypeLibrary.DataAnnotations.CreditCardAttribute)
+			);
+			CheckUnsupportedStringOnlyAttribute(
+				diagnostics,
+				attributes,
+				propertyName,
+				propertyType,
+				TypeLibrary.DataAnnotations.Base64StringAttribute,
+				nameof(TypeLibrary.DataAnnotations.Base64StringAttribute)
 			);
 		}
 
@@ -747,6 +796,97 @@ partial class ZodSchemaGenerator
 				canBeNull
 			);
 		}
+	}
+
+	static void CheckUnsupportedStringOnlyAttribute(
+		List<DiagnosticInfo> diagnostics,
+		ImmutableArray<AttributeData> attributes,
+		string propertyName,
+		ITypeSymbol propertyType,
+		TypeValueObject attributeType,
+		string attributeName
+	)
+	{
+		var attributeData = attributes.FirstOrDefault(a => attributeType.Equals(a.AttributeClass));
+		if (attributeData is null)
+			return;
+
+		AddUnsupportedDataAnnotationsDiagnostic(
+			diagnostics,
+			attributeData,
+			string.Format(
+				CultureInfo.InvariantCulture,
+				"{0} on '{1}' cannot be generated safely for '{2}'.",
+				attributeName,
+				propertyName,
+				propertyType.ToDisplayString()
+			)
+		);
+	}
+
+	static void GenerateCompareValidation(
+		GenerationContext generationContext,
+		GenerationLogger? logger,
+		IPropertySymbol property,
+		INamedTypeSymbol? containingType,
+		ImmutableArray<AttributeData> attributes,
+		string propertyName,
+		List<DiagnosticInfo> diagnostics
+	)
+	{
+		var compareAttribute = CompareAttributeData.FromAttributeData(attributes);
+		if (!compareAttribute.Exists)
+			return;
+
+		var otherPropertyName = compareAttribute.OtherProperty;
+		var otherProperty = containingType
+			?.GetMembers(otherPropertyName)
+			.OfType<IPropertySymbol>()
+			.FirstOrDefault();
+		if (otherProperty is null)
+		{
+			diagnostics.Add(
+				DiagnosticInfo.Create(
+					GeneratorDiagnostics.ComparePropertyNotFound,
+					property.Locations.FirstOrDefault(),
+					propertyName,
+					otherPropertyName
+				)
+			);
+			return;
+		}
+
+		var displayName = GetDisplayName(property);
+		var otherDisplayName =
+			compareAttribute.OtherPropertyDisplayName
+			?? GetDisplayName(otherProperty)
+			?? otherPropertyName;
+		var messageExpression = BuildMessageExpression(
+			logger,
+			diagnostics,
+			attributes.FirstOrDefault(static a =>
+				TypeLibrary.DataAnnotations.CompareAttribute.Equals(a.AttributeClass)
+			),
+			displayName,
+			compareAttribute.ValidationAttribute,
+			CodeGenHelpers.Quote($"Field '{displayName}' must match '{otherDisplayName}'.")
+		);
+
+		using (
+			generationContext.CodeWriter.Block(
+				$"if (!global::System.Collections.Generic.EqualityComparer<object>.Default.Equals(value.{propertyName}, value.{otherPropertyName}))"
+			)
+		)
+		{
+			WriteValidationError(
+				generationContext,
+				"mismatch",
+				messageExpression,
+				CodeGenHelpers.GetPathFieldName(propertyName)
+			);
+		}
+
+		generationContext.CodeWriter.WriteLine();
 	}
 
 	static bool IsSourceDefinedComplexType(INamedTypeSymbol type) =>

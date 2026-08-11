@@ -94,6 +94,205 @@ partial class ZodSchemaGenerator
 
 			generationContext.CodeWriter.WriteLine();
 		}
+
+		GenerateUrlValidation(generationContext, logger, property, propertyName, attributes);
+		GeneratePhoneValidation(generationContext, logger, property, propertyName, attributes);
+		GenerateCreditCardValidation(generationContext, logger, property, propertyName, attributes);
+		GenerateBase64StringValidation(
+			generationContext,
+			logger,
+			property,
+			propertyName,
+			attributes
+		);
+	}
+
+	static void GenerateUrlValidation(
+		GenerationContext generationContext,
+		GenerationLogger? logger,
+		IPropertySymbol property,
+		string propertyName,
+		ImmutableArray<AttributeData> attributes
+	)
+	{
+		var urlAttribute = UrlAttribute.FromAttributeData(attributes);
+		if (!urlAttribute.Exists)
+			return;
+
+		var displayName = GetDisplayName(property);
+		var propertyValueName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Value");
+		var messageExpression = BuildMessageExpression(
+			logger,
+			[],
+			null,
+			displayName,
+			urlAttribute.ValidationAttribute,
+			CodeGenHelpers.Quote($"Field '{displayName}' must be a valid URL.")
+		);
+
+		using (generationContext.CodeWriter.Block())
+		{
+			generationContext.CodeWriter.WriteLine(
+				$"var {propertyValueName} = value.{propertyName};"
+			);
+			using (
+				generationContext.CodeWriter.Block(
+					$"if ({propertyValueName}.Length != 0 && !new global::ZodSharp.Rules.UrlRule().IsValid({propertyValueName}))"
+				)
+			)
+			{
+				WriteValidationError(
+					generationContext,
+					"invalid_string",
+					messageExpression,
+					CodeGenHelpers.GetPathFieldName(propertyName),
+					"string"
+				);
+			}
+		}
+
+		generationContext.CodeWriter.WriteLine();
+	}
+
+	static void GeneratePhoneValidation(
+		GenerationContext generationContext,
+		GenerationLogger? logger,
+		IPropertySymbol property,
+		string propertyName,
+		ImmutableArray<AttributeData> attributes
+	)
+	{
+		var phoneAttribute = PhoneAttribute.FromAttributeData(attributes);
+		if (!phoneAttribute.Exists)
+			return;
+
+		var displayName = GetDisplayName(property);
+		var propertyValueName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Value");
+		var messageExpression = BuildMessageExpression(
+			logger,
+			[],
+			null,
+			displayName,
+			phoneAttribute.ValidationAttribute,
+			CodeGenHelpers.Quote($"Field '{displayName}' must be a valid phone number.")
+		);
+
+		using (generationContext.CodeWriter.Block())
+		{
+			generationContext.CodeWriter.WriteLine(
+				$"var {propertyValueName} = value.{propertyName};"
+			);
+			using (
+				generationContext.CodeWriter.Block(
+					$"if ({propertyValueName}.Length != 0 && !new global::ZodSharp.Rules.PhoneRule().IsValid({propertyValueName}))"
+				)
+			)
+			{
+				WriteValidationError(
+					generationContext,
+					"invalid_string",
+					messageExpression,
+					CodeGenHelpers.GetPathFieldName(propertyName),
+					"string"
+				);
+			}
+		}
+
+		generationContext.CodeWriter.WriteLine();
+	}
+
+	static void GenerateCreditCardValidation(
+		GenerationContext generationContext,
+		GenerationLogger? logger,
+		IPropertySymbol property,
+		string propertyName,
+		ImmutableArray<AttributeData> attributes
+	)
+	{
+		var creditCardAttribute = CreditCardAttributeData.FromAttributeData(attributes);
+		if (!creditCardAttribute.Exists)
+			return;
+
+		var displayName = GetDisplayName(property);
+		var propertyValueName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Value");
+		var messageExpression = BuildMessageExpression(
+			logger,
+			[],
+			null,
+			displayName,
+			creditCardAttribute.ValidationAttribute,
+			CodeGenHelpers.Quote($"Field '{displayName}' must be a valid credit card number.")
+		);
+
+		using (generationContext.CodeWriter.Block())
+		{
+			generationContext.CodeWriter.WriteLine(
+				$"var {propertyValueName} = value.{propertyName};"
+			);
+			using (
+				generationContext.CodeWriter.Block(
+					$"if ({propertyValueName}.Length != 0 && !new global::ZodSharp.Rules.CreditCardRule().IsValid({propertyValueName}))"
+				)
+			)
+			{
+				WriteValidationError(
+					generationContext,
+					"invalid_string",
+					messageExpression,
+					CodeGenHelpers.GetPathFieldName(propertyName),
+					"string"
+				);
+			}
+		}
+
+		generationContext.CodeWriter.WriteLine();
+	}
+
+	static void GenerateBase64StringValidation(
+		GenerationContext generationContext,
+		GenerationLogger? logger,
+		IPropertySymbol property,
+		string propertyName,
+		ImmutableArray<AttributeData> attributes
+	)
+	{
+		var base64StringAttribute = Base64StringAttributeData.FromAttributeData(attributes);
+		if (!base64StringAttribute.Exists)
+			return;
+
+		var displayName = GetDisplayName(property);
+		var propertyValueName = CodeGenHelpers.GetLocalIdentifier(propertyName, "Value");
+		var messageExpression = BuildMessageExpression(
+			logger,
+			[],
+			null,
+			displayName,
+			base64StringAttribute.ValidationAttribute,
+			CodeGenHelpers.Quote($"Field '{displayName}' must be a valid Base64 string.")
+		);
+
+		using (generationContext.CodeWriter.Block())
+		{
+			generationContext.CodeWriter.WriteLine(
+				$"var {propertyValueName} = value.{propertyName};"
+			);
+			using (
+				generationContext.CodeWriter.Block(
+					$"if ({propertyValueName}.Length != 0 && !new global::ZodSharp.Rules.Base64StringRule().IsValid({propertyValueName}))"
+				)
+			)
+			{
+				WriteValidationError(
+					generationContext,
+					"invalid_string",
+					messageExpression,
+					CodeGenHelpers.GetPathFieldName(propertyName),
+					"string"
+				);
+			}
+		}
+
+		generationContext.CodeWriter.WriteLine();
 	}
 
 	static void StringLengthValidators(

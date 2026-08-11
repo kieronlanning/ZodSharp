@@ -26,7 +26,6 @@ namespace Testing
 
 	[Test]
 	[Arguments("public")]
-	[Arguments("private")]
 	[Arguments("internal")]
 	// This is internal too
 	[Arguments("")]
@@ -36,7 +35,8 @@ namespace Testing
 	)
 	{
 		// Arrange
-		var expectation = $"{modifier} static partial class ModifierTestSchema";
+		var expectedModifier = string.IsNullOrEmpty(modifier) ? "internal" : modifier;
+		var expectation = $"{expectedModifier} static partial class ModifierTestSchema";
 
 		var source =
 			$@"
