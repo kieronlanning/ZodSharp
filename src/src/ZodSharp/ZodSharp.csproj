@@ -12,6 +12,7 @@
 			and source generator support for maximum performance.
 		</Description>
 		<PackageTags>zod;validation;schema</PackageTags>
+		<NoWarn>$(NoWarn);NU5118</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup>

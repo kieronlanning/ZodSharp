@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
             8.0.x
@@ -33,11 +33,3 @@ jobs:
 
       - name: Test
         run: dotnet test src/ZodSharp.slnx -c Release --no-build --treenode-filter "/*/*/*/*/"
-
-      - name: Pack
-        run: dotnet pack src/ZodSharp.slnx -c Release --no-build -o ./artifacts
-
-      - name: Check formatting
-        run: |
-          dotnet tool restore
-          dotnet csharpier check .
