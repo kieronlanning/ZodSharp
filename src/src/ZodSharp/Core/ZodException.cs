@@ -19,7 +19,7 @@ public class ZodException : Exception
 	public ZodException(ImmutableArray<ValidationError> errors)
 		: base($"Validation failed with {(errors.IsDefault ? 0 : errors.Length)} error(s)")
 	{
-		Errors = errors.IsDefault ? ImmutableArray<ValidationError>.Empty : errors;
+		Errors = errors.IsDefault ? [] : errors;
 	}
 
 	/// <summary>

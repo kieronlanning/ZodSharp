@@ -72,7 +72,7 @@ public static class SystemTextJsonExtensions
 		{
 			T? deserialized;
 #if NETSTANDARD2_1_OR_GREATER
-			// System.Text.Json on netstandard2.1 lacks the CancellationToken overload of DeserializeAsync.
+			// Older System.Text.Json packages lack the CancellationToken overload of DeserializeAsync.
 			using StreamReader reader = new(jsonStream, Encoding.UTF8, true, 1024, true);
 			var json = await reader.ReadToEndAsync();
 			deserialized = JsonSerializer.Deserialize<T>(json, options);

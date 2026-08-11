@@ -40,7 +40,7 @@
 	<Target
 		Name="IncludeZodSharpSourceGenerator"
 		DependsOnTargets="Build"
-		Condition="'$(TargetFramework)' == 'netstandard2.1'"
+		Condition="'$(TargetFramework)' == 'net8.0'"
 	>
 		<Error
 			Condition="!Exists('$(ZodSharpSourceGeneratorAssembly)')"
@@ -56,13 +56,6 @@
 			/>
 		</ItemGroup>
 	</Target>
-
-	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-		<PackageReference
-			Include="System.Collections.Immutable"
-			VersionOverride="$(SystemCollectionsImmutableVersion)"
-		/>
-	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="$(MSBuildThisFileDirectory)..\..\..\README.md" Pack="true" PackagePath="\" />
