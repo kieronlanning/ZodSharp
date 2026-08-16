@@ -15,34 +15,52 @@
 		<NoWarn>$(NoWarn);NU5118</NoWarn>
 	</PropertyGroup>
 
-	<PropertyGroup>
-		<ZodSharpSourceGeneratorProject>$(MSBuildThisFileDirectory)..\SourceGenerators\SourceGenerators.csproj</ZodSharpSourceGeneratorProject>
+	<!--<PropertyGroup>
+		<ZodSharpSourceGeneratorProjectName>SourceGenerators</ZodSharpSourceGeneratorProjectName>
+		<ZodSharpSourceGeneratorProject>$(MSBuildThisFileDirectory)..\$(ZodSharpSourceGeneratorProjectName)\$(ZodSharpSourceGeneratorProjectName).csproj</ZodSharpSourceGeneratorProject>
 		<ZodSharpSourceGeneratorTargetFramework>netstandard2.0</ZodSharpSourceGeneratorTargetFramework>
-		<ZodSharpSourceGeneratorAssembly>$(MSBuildThisFileDirectory)..\SourceGenerators\bin\$(Configuration)\$(ZodSharpSourceGeneratorTargetFramework)\ZodSharp.SourceGeneration.dll</ZodSharpSourceGeneratorAssembly>
+		<ZodSharpSourceGeneratorAssembly>$(MSBuildThisFileDirectory)..\$(ZodSharpSourceGeneratorProjectName)\bin\$(Configuration)\$(ZodSharpSourceGeneratorTargetFramework)\$(RootNamespace).$(ZodSharpSourceGeneratorProjectName).dll</ZodSharpSourceGeneratorAssembly>
 		<TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);IncludeZodSharpSourceGenerator</TargetsForTfmSpecificContentInPackage>
-	</PropertyGroup>
+	</PropertyGroup>-->
 
 	<ItemGroup>
-		<ProjectReference Include="$(ZodSharpSourceGeneratorProject)" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+		<!--Include="$(ZodSharpSourceGeneratorProject)"-->
+		<ProjectReference
+			Include="../SourceGenerators/SourceGenerators.csproj"
+			PrivateAssets="all"
+			ReferenceOutputAssembly="false"
+			OutputItemType="Analyzer"
+		/>
 	</ItemGroup>
 
-	<Target Name="IncludeZodSharpSourceGenerator">
-		<Error Condition="!Exists('$(ZodSharpSourceGeneratorAssembly)')" Text="The ZodSharp source generator was not found at '$(ZodSharpSourceGeneratorAssembly)'." />
-
-		<MSBuild Projects="$(ZodSharpSourceGeneratorProject)" Targets="GetSourceGeneratorAnalyzerFiles" Properties="Configuration=$(Configuration);TargetFramework=$(ZodSharpSourceGeneratorTargetFramework)">
+	<!--<Target
+		Name="IncludeZodSharpSourceGenerator"
+		Condition="'$(TargetFramework)' == '$(DefaultTargetFramework)'"
+	>
+		<MSBuild
+			Projects="$(ZodSharpSourceGeneratorProject)"
+			Targets="GetSourceGeneratorAnalyzerFiles"
+			Properties="Configuration=$(Configuration);TargetFramework=$(ZodSharpSourceGeneratorTargetFramework)"
+		>
 			<Output TaskParameter="TargetOutputs" ItemName="_ZodSharpSourceGeneratorFiles" />
 		</MSBuild>
 
 		<ItemGroup>
-			<TfmSpecificPackageFile Include="@(_ZodSharpSourceGeneratorFiles)" PackagePath="analyzers/dotnet/cs/" />
+			<TfmSpecificPackageFile
+				Include="@(_ZodSharpSourceGeneratorFiles)"
+				PackagePath="analyzers/dotnet/cs/"
+			/>
 		</ItemGroup>
-	</Target>
+	</Target>-->
 
 	<ItemGroup>
-		<None Include="$(MSBuildThisFileDirectory)..\..\..\README.md" Pack="true" PackagePath="\" />
+		<None Include="$(MSBuildThisFileDirectory)..\..\..\README.md" Link="Sdk/README.md" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" VersionOverride="$(MicrosoftExtensionsDependencyInjectionAbstractionsVersion)" />
+		<PackageReference
+			Include="Microsoft.Extensions.DependencyInjection.Abstractions"
+			VersionOverride="$(MicrosoftExtensionsDependencyInjectionAbstractionsVersion)"
+		/>
 	</ItemGroup>
 </Project>
