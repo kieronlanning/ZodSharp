@@ -1,6 +1,6 @@
 using System.Reflection;
+using ZodSharp.SourceGenerators.Helpers;
 using ZodSharp.SourceGenerators.Infra;
-using ZodSharp.SourceGenerators.Models;
 
 namespace ZodSharp.SourceGenerators;
 
@@ -432,7 +432,7 @@ namespace Testing
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
 
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.InvalidLengthAttribute);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.InvalidLengthAttribute);
 	}
 
 	[Test]
@@ -454,7 +454,7 @@ namespace Testing
 ";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.UnsupportedLengthAttributeTarget);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.UnsupportedLengthAttributeTarget);
 	}
 
 	[Test]
@@ -508,7 +508,7 @@ namespace Testing
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
 
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.InvalidDataAnnotationsErrorMessage);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.InvalidDataAnnotationsErrorMessage);
 	}
 
 	[Test]
@@ -729,7 +729,7 @@ namespace Testing
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
 
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.ComparePropertyNotFound);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.ComparePropertyNotFound);
 	}
 
 	const string UserSource =

@@ -1,5 +1,5 @@
+using ZodSharp.SourceGenerators.Helpers;
 using ZodSharp.SourceGenerators.Infra;
-using ZodSharp.SourceGenerators.Models;
 
 namespace ZodSharp.SourceGenerators;
 
@@ -107,7 +107,7 @@ namespace Testing
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
 
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationMethodNotFound);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationMethodNotFound);
 	}
 
 	[Test]
@@ -133,7 +133,7 @@ namespace Testing
 }";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInvalidReturnType);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInvalidReturnType);
 	}
 
 	[Test]
@@ -159,7 +159,7 @@ namespace Testing
 }";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInvalidParameterCount);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInvalidParameterCount);
 	}
 
 	[Test]
@@ -187,7 +187,7 @@ namespace Testing
 }";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInvalidModelParameter);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInvalidModelParameter);
 	}
 
 	[Test]
@@ -215,7 +215,7 @@ namespace Testing
 }";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInvalidCancellationToken);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInvalidCancellationToken);
 	}
 
 	[Test]
@@ -241,7 +241,7 @@ namespace Testing
 }";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationGenericMethod);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationGenericMethod);
 	}
 
 	[Test]
@@ -267,7 +267,7 @@ namespace Testing
 }";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInvalidStaticInstance);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInvalidStaticInstance);
 	}
 
 	[Test]
@@ -293,7 +293,7 @@ namespace Testing
 }";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInaccessible);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInaccessible);
 	}
 
 	[Test]
@@ -343,7 +343,7 @@ namespace Testing
 }";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInvalidMethodName);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInvalidMethodName);
 	}
 
 	[Test]
@@ -369,7 +369,7 @@ namespace Testing
 }";
 
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInvalidParameterModifier);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInvalidParameterModifier);
 	}
 
 	[Test]
@@ -404,8 +404,8 @@ namespace Testing
 		// Neither is valid — should get diagnostics but no ambiguity.
 		var driverResult = await GenerateAsync(source, ZodSourceGeneratorTestOptions.NoValidation, cancellationToken);
 
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInvalidReturnType);
-		await Assert.That(driverResult).HasDiagnostic(GeneratorDiagnostics.CustomValidationInvalidParameterCount);
-		await Assert.That(driverResult).DoesNotHaveDiagnostic(GeneratorDiagnostics.CustomValidationAmbiguousOverloads);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInvalidReturnType);
+		await Assert.That(driverResult).HasDiagnostic(DiagnosticLibrary.CustomValidationInvalidParameterCount);
+		await Assert.That(driverResult).DoesNotHaveDiagnostic(DiagnosticLibrary.CustomValidationAmbiguousOverloads);
 	}
 }
