@@ -19,13 +19,13 @@ namespace Testing
 ";
 
 		// Act
-		var driverResult = await GenerateZodAsync(source, cancellationToken);
-		var generatedSource = GetSchemaGeneratedSource(driverResult, "CustomerSchema");
+		var driverResult = await GenerateAsync(source, cancellationToken);
+		var generatedSource = driverResult.GetSource("CustomerSchema");
 
 		// Assert
-		await Assert.That(generatedSource).Contains("namespace Testing");
-		await Assert.That(generatedSource).Contains("#nullable enable");
-		await Assert.That(generatedSource).Contains("public static partial class CustomerSchema");
+		await Assert.That(generatedSource).ContainsGeneratedCode("namespace Testing");
+		await Assert.That(generatedSource).ContainsGeneratedCode("#nullable enable");
+		await Assert.That(generatedSource).ContainsGeneratedCode("public static partial class CustomerSchema");
 	}
 
 	[Test]
@@ -41,11 +41,11 @@ namespace Testing
 ";
 
 		// Act
-		var driverResult = await GenerateZodAsync(source, cancellationToken);
-		var generatedSource = GetSchemaGeneratedSource(driverResult, "CustomerSchema");
+		var driverResult = await GenerateAsync(source, cancellationToken);
+		var generatedSource = driverResult.GetSource("CustomerSchema");
 
 		// Assert
-		await Assert.That(generatedSource).IsEmpty();
+		await Assert.That(generatedSource).IsNull();
 	}
 
 	[Test]
@@ -68,11 +68,11 @@ namespace Testing
 ";
 
 		// Act
-		var driverResult = await GenerateZodAsync(source, cancellationToken);
+		var driverResult = await GenerateAsync(source, cancellationToken);
 
 		// Assert
-		await Assert.That(GetSchemaGeneratedSource(driverResult, "CustomerSchema")).IsNotEmpty();
-		await Assert.That(GetSchemaGeneratedSource(driverResult, "AddressSchema")).IsNotEmpty();
-		await Assert.That(GetSchemaGeneratedSource(driverResult, "OrderSchema")).IsNotEmpty();
+		await Assert.That(driverResult.GetSource("CustomerSchema")).IsNotEmpty();
+		await Assert.That(driverResult.GetSource("AddressSchema")).IsNotEmpty();
+		await Assert.That(driverResult.GetSource("OrderSchema")).IsNotEmpty();
 	}
 }

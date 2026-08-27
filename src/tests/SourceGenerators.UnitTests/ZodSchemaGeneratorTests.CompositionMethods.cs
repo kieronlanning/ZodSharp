@@ -19,14 +19,12 @@ namespace Testing
 ";
 
 		// Act
-		var driverResult = await GenerateZodAsync(source, cancellationToken);
-		var generatedSource = GetSchemaGeneratedSource(driverResult, "ComposeModelSchema");
+		var driverResult = await GenerateAsync(source, cancellationToken);
+		var generatedSource = driverResult.GetSource("ComposeModelSchema");
 
-		await Assert.That(generatedSource).Contains("ApplyAnd");
-		await Assert.That(generatedSource).Contains("ApplyOr");
-		await Assert.That(generatedSource).Contains("ApplyRefine");
-		// Compilation succeeding proves the previously-buggy Or emission (a stray
-		// dollar sign before the return type) is fixed.
+		await Assert.That(generatedSource).ContainsGeneratedCode("ApplyAnd");
+		await Assert.That(generatedSource).ContainsGeneratedCode("ApplyOr");
+		await Assert.That(generatedSource).ContainsGeneratedCode("ApplyRefine");
 	}
 
 	[Test]
@@ -46,8 +44,8 @@ namespace Testing
 ";
 
 		// Act
-		var driverResult = await GenerateZodAsync(source, cancellationToken);
-		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
+		var driverResult = await GenerateAsync(source, cancellationToken);
+		var assembly = await Assert.That(driverResult.CompilationResult.Assembly).IsNotNull();
 
 		var modelType = assembly.GetType("Testing.RefineModel")!;
 		var schemaType = assembly.GetType("Testing.RefineModelSchema")!;
@@ -97,8 +95,8 @@ namespace Testing
 
 		// Act — compile and invoke, proving the generated validator can be cast to
 		// IZodSchema<T> and used in the composition API.
-		var driverResult = await GenerateZodAsync(source, cancellationToken);
-		var assembly = await Assert.That(driverResult.Assembly).IsNotNull();
+		var driverResult = await GenerateAsync(source, cancellationToken);
+		var assembly = await Assert.That(driverResult.CompilationResult.Assembly).IsNotNull();
 
 		// Assert
 		var helper = assembly.GetType("Testing.CompositionUser")!;
