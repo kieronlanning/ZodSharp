@@ -208,9 +208,6 @@ partial class ZodSchemaGenerator
 
 	static string GetRangeMaximumFieldName(string propertyName) => $"RangeMaximum_{propertyName}";
 
-	static string GetFullyQualifiedTypeName(ITypeSymbol type) =>
-		TypeHelpers.UnwrapNullableType(type).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0072:Add missing cases")]
 	static bool TryBuildTypedConstantExpression(
 		TypedConstant constant,

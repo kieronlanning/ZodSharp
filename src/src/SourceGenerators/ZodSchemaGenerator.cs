@@ -31,23 +31,56 @@ public sealed partial class ZodSchemaGenerator : IIncrementalGenerator
 				if (model.Context.Settings.IsSourceGeneratorDisabled)
 					return;
 
+				if (!model.Context.Capabilities.HasRequiredAttribute)
+				{
+					var diagnostic = DiagnosticInfo.Create(DiagnosticLibrary.DataAnnotationsReferenceNotFound);
+					spc.ReportDiagnostic(diagnostic);
+
+					return;
+				}
+
 				foreach (var schema in model.ZodSchemas)
 				{
 					if (schema.HasDiagnostics)
 						spc.ReportDiagnostics(schema.Diagnostics);
 
+					if (schema.Value.CustomValidationMethod.HasDiagnostics)
+						spc.ReportDiagnostics(schema.Value.CustomValidationMethod.Diagnostics);
+
+					foreach (var property in schema.Value.Properties)
+					{
+						if (property.HasDiagnostics)
+							spc.ReportDiagnostics(property.Diagnostics);
+
+						if (property.Value.ValidationAttributes.HasDiagnostics)
+							spc.ReportDiagnostics(property.Value.ValidationAttributes.GetDiagnostics());
+					}
+
 					if (!schema.ShouldProcess)
 						continue;
 
-					var symbol = SymbolResolver.Resolve(
-						model.Context.Capabilities.Compilation,
-						schema.Value.SchemaType
-					);
-					if (symbol is null)
-						continue;
+					try
+					{
+						SchemaGenerationOutputContext outputContext = new(model.Context, schema.Value);
+						BuildSchema(outputContext, spc, schema.Value.IsPrimary);
+					}
+					catch (CodeWriterScopeValidationException)
+					{
+						// This is an opt-in framework invariant failure. Let Roslyn and the test
+						// harness retain the exception instead of reducing it to ZODSGEN001.
+						throw;
+					}
+					catch (Exception ex)
+					{
+						// Report diagnostic if generation fails
+						var diagnostic = DiagnosticInfo.Create(
+							DiagnosticLibrary.UnhandledException,
+							schema.Value.TargetType.Name,
+							ex.Message
+						);
 
-					SchemaGenerationOutputContext outputContext = new(model.Context);
-					BuildSchema(symbol, schema.Value.SchemaType, outputContext, spc, schema.Value.IsPrimary);
+						spc.ReportDiagnostic(diagnostic);
+					}
 				}
 			}
 		);

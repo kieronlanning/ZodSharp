@@ -25,18 +25,11 @@ readonly record struct RangeAttributeData(
 	ValidationAttributeData ValidationAttribute
 )
 {
-	public static readonly RangeAttributeData Empty = new(
-		false,
-		RangeAttributeKind.None,
-		null,
-		null,
-		null,
-		false,
-		false,
-		false,
-		false,
-		ValidationAttributeData.Empty
-	);
+	public static readonly RangeAttributeData Empty;
+
+	public string? MinimumExpression { get; init; }
+
+	public string? MaximumExpression { get; init; }
 
 	public static RangeAttributeData FromAttributeData(ImmutableArray<AttributeData> attributes) =>
 		FromAttributeData(attributes, out _);
