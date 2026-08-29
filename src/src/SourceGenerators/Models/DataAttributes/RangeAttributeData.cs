@@ -17,7 +17,7 @@ readonly record struct RangeAttributeData(
 	RangeAttributeKind Kind,
 	object? Minimum,
 	object? Maximum,
-	ITypeSymbol? OperandType,
+	TypeIdentity? OperandType,
 	bool MinimumIsExclusive,
 	bool MaximumIsExclusive,
 	bool ConvertValueInInvariantCulture,
@@ -69,7 +69,7 @@ readonly record struct RangeAttributeData(
 		var kind = RangeAttributeKind.None;
 		object? minimum = null;
 		object? maximum = null;
-		ITypeSymbol? operandType = null;
+		TypeIdentity? operandType = null;
 
 		if (constructorArguments.Length == 2)
 		{
@@ -120,7 +120,7 @@ readonly record struct RangeAttributeData(
 		ref RangeAttributeKind kind,
 		ref object? minimum,
 		ref object? maximum,
-		ref ITypeSymbol? operandType
+		ref TypeIdentity? operandType
 	)
 	{
 		var minimumArgument = arguments[0];
@@ -131,7 +131,7 @@ readonly record struct RangeAttributeData(
 			kind = RangeAttributeKind.Int32;
 			minimum = minimumValue;
 			maximum = maximumValue;
-			operandType = minimumArgument.Type;
+			operandType = minimumArgument.Type is not null ? new TypeIdentity(minimumArgument.Type) : null;
 			return;
 		}
 
@@ -140,7 +140,7 @@ readonly record struct RangeAttributeData(
 			kind = RangeAttributeKind.Double;
 			minimum = minimumValueDouble;
 			maximum = maximumValueDouble;
-			operandType = minimumArgument.Type;
+			operandType = minimumArgument.Type is not null ? new TypeIdentity(minimumArgument.Type) : null;
 		}
 	}
 
@@ -149,7 +149,7 @@ readonly record struct RangeAttributeData(
 		ref RangeAttributeKind kind,
 		ref object? minimum,
 		ref object? maximum,
-		ref ITypeSymbol? operandType
+		ref TypeIdentity? operandType
 	)
 	{
 		if (
@@ -162,7 +162,7 @@ readonly record struct RangeAttributeData(
 		}
 
 		kind = RangeAttributeKind.Converted;
-		operandType = type;
+		operandType = new TypeIdentity(type);
 		minimum = minimumValue;
 		maximum = maximumValue;
 	}

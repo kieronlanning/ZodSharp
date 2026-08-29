@@ -6,8 +6,6 @@ namespace ZodSharp.SourceGenerators.Models;
 sealed record SchemaGenerationModel(GenerationContext<SchemaGenerationCapabilities> Context)
 {
 	public EquatableArray<GeneratorResult<ZodSchemaDescriptor>> ZodSchemas { get; init; } = [];
-
-	public EquatableArray<DiagnosticInfo> Diagnostics { get; init; } = [];
 }
 
 sealed record SchemaGenerationCapabilities : IGenerationCapabilities
@@ -15,20 +13,18 @@ sealed record SchemaGenerationCapabilities : IGenerationCapabilities
 	public bool HasRequiredAttribute { get; init; }
 }
 
-// This is recreated outside of the pipeline to avoid the state
-// of the CodeWriter being shared across multiple source outputs.
-sealed record SchemaGenerationOutputContext(
-	GenerationContext<SchemaGenerationCapabilities> Context,
-	ZodSchemaDescriptor ZodSchema
-) : ISourceGenLogger
+readonly record struct SchemaSet(EquatableArray<ZodSchemaDescriptor> Schemas);
+
+enum PropertyValidationKind
 {
-	public CodeWriter Writer { get; private set; } = Context.CreateCodeWriter();
-
-	public CodeWriter CreateCodeWriter() => Writer = Context.CreateCodeWriter();
-
-	public void Log(SourceGenLogLevel level, int indentation, string message, params object[] args) =>
-		Context.Log(level, indentation, message, args);
+	String,
+	Numeric,
+	Collection,
+	Complex,
+	Unsupported,
 }
+
+readonly record struct LengthAccessor(string LengthExpression, string Origin, bool IsSupported);
 
 /// <param name="TargetType">This is the target of the attribute, the type where the attribute was defined.</param>
 /// <param name="SchemaType">This is the schema type, the one that will be generated.</param>
@@ -52,7 +48,14 @@ readonly record struct ZodSchemaDescriptor(
 readonly record struct ZodPropertyDescriptor(
 	TypeIdentity PropertyType,
 	string Name,
+	string DisplayName,
 	bool CanBeNull,
+	bool IsEnum,
+	PropertyValidationKind ValidationKind,
+	TypeIdentity? ElementType,
+	bool ElementTypeCanBeNull,
+	TypeIdentity? NestedSchemaType,
+	LengthAccessor LengthAccessor,
 	ValidationAttributes ValidationAttributes
 );
 
@@ -112,6 +115,4 @@ readonly record struct ValidationAttributes(
 			.. Length.Diagnostics,
 			.. Range.Diagnostics,
 		];
-
-	readonly record struct SchemaSet(EquatableArray<ZodSchemaDescriptor> Schemas);
 }

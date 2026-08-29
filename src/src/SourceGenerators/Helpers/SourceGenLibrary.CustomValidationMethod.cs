@@ -12,7 +12,7 @@ partial class SourceGenLibrary
 	/// discovers and validates the matching method on the schema type, and returns
 	/// an immutable <see cref="CustomValidationMethodData"/>.
 	/// </summary>
-	static GeneratorResult<CustomValidationMethodData> ResolveCustomValidationMethod(
+	internal static GeneratorResult<CustomValidationMethodData> ResolveCustomValidationMethod(
 		INamedTypeSymbol classSymbol,
 		ZodSchemaAttributeData zodSchemaAttributeData,
 		AttributeData zodSchemaAttribute

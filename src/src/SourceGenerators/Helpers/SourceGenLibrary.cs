@@ -96,7 +96,7 @@ static partial class SourceGenLibrary
 						m.DeclaredAccessibility == Accessibility.Public
 						&& !m.IsStatic
 						&& !m.IsIndexer
-						&& TypeHelpers.HasDataAnnotationAttribute(m)
+						&& (TypeHelpers.HasDataAnnotationAttribute(m) || IsPropertyWithNestedSchema(m))
 					)
 			)
 			{
@@ -106,6 +106,22 @@ static partial class SourceGenLibrary
 		}
 
 		return GeneratorResult<SchemaSet>.Create(new SchemaSet(schemas.ToImmutable()));
+	}
+
+	static bool IsPropertyWithNestedSchema(IPropertySymbol property)
+	{
+		var propertyType = TypeHelpers.UnwrapNullableType(property.Type);
+		if (propertyType is IArrayTypeSymbol arrayType)
+			propertyType = arrayType.ElementType;
+		else if (propertyType is INamedTypeSymbol namedType)
+		{
+			var enumerable = namedType.AllInterfaces.FirstOrDefault(TypeLibrary.Collections.IEnumerableT.Equals);
+			if (enumerable is not null)
+				propertyType = enumerable.TypeArguments[0];
+		}
+
+		propertyType = TypeHelpers.UnwrapNullableType(propertyType);
+		return propertyType is INamedTypeSymbol nested && IsSourceDefinedComplexType(nested);
 	}
 
 	static EquatableArray<TypeDeclarationOptions> GetContainingTypes(INamedTypeSymbol typeSymbol)
@@ -151,44 +167,51 @@ static partial class SourceGenLibrary
 		return new(results.ToImmutable());
 	}
 
-	static EquatableArray<GeneratorResult<ZodPropertyDescriptor>> GetZodProperties(INamedTypeSymbol symbol) =>
-		new([
-			.. symbol
-				.GetMembers()
-				.OfType<IPropertySymbol>()
-				.Where(static property =>
-					property.DeclaredAccessibility == Accessibility.Public
-					&& !property.IsStatic
-					&& !property.IsIndexer
-					&& TypeHelpers.HasDataAnnotationAttribute(property)
-				)
-				.Select(static property => GetValidatablePropertyDescriptor(property)),
-		]);
-
-	static GeneratorResult<ZodPropertyDescriptor> GetValidatablePropertyDescriptor(IPropertySymbol property)
+	static EquatableArray<GeneratorResult<ZodPropertyDescriptor>> GetZodProperties(INamedTypeSymbol symbol)
 	{
-		TypeIdentity propertyType = new(property.Type);
-		var propertyCanBeNull = TypeHelpers.CanBeNull(property.Type);
+		var properties = symbol
+			.GetMembers()
+			.OfType<IPropertySymbol>()
+			.Where(property => property.DeclaredAccessibility == Accessibility.Public)
+			.Select(static property => GetValidatablePropertyDescriptor(property))
+			.ToImmutableArray();
+
+		return new(properties);
+	}
+
+	internal static GeneratorResult<ZodPropertyDescriptor> GetValidatablePropertyDescriptor(IPropertySymbol property)
+	{
+		var propertyType = CreateTypeIdentity(property.Type);
+		var originalPropertyType = property.Type;
+		var propertyCanBeNull = TypeHelpers.CanBeNull(originalPropertyType);
 		if (
-			property.Type is INamedTypeSymbol
+			originalPropertyType is INamedTypeSymbol
 			{
 				OriginalDefinition.SpecialType: SpecialType.System_Nullable_T
 			} nullableType
 		)
 		{
 			propertyType = new(nullableType.TypeArguments[0]);
+			originalPropertyType = nullableType.TypeArguments[0];
 		}
 
 		var diagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
-		var supportsLengthAttribute =
-			propertyType.SpecialType == SpecialType.System_String
-			|| property.Type is IArrayTypeSymbol
-			|| TypeHelpers.IsOrImplements(property.Type, TypeLibrary.Collections.IEnumerable)
-			|| TypeHelpers.IsOrImplements(property.Type, TypeLibrary.Collections.IEnumerableT);
+		var validationKind = GetPropertyValidationKind(propertyType, originalPropertyType);
+		var elementType =
+			validationKind == PropertyValidationKind.Collection
+				? GetCollectionElementTypeIdentity(originalPropertyType)
+				: null;
+		var elementTypeCanBeNull =
+			validationKind == PropertyValidationKind.Collection
+			&& elementType is not null
+			&& TypeHelpers.CanBeNull(GetCollectionElementTypeSymbol(originalPropertyType) ?? originalPropertyType);
+		var nestedSchemaType = GetNestedSchemaTypeIdentity(property, validationKind);
+		var lengthAccessor = ClassifyLengthAccessor(originalPropertyType);
+		var displayName = GetDisplayName(property);
 
+		var displayAttribute = DisplayAttributeData.FromAttributeData(property);
 		var requiredAttribute = RequiredAttributeData.FromAttributeData(property);
 		var compareAttribute = CompareAttributeData.FromAttributeData(property);
-		var displayAttribute = DisplayAttributeData.FromAttributeData(property);
 		var emailAddressAttribute = EmailAddressAttributeData.FromAttributeData(property);
 		var creditCardAttribute = CreditCardAttributeData.FromAttributeData(property);
 		var phoneAttribute = PhoneAttribute.FromAttributeData(property);
@@ -200,18 +223,13 @@ static partial class SourceGenLibrary
 		if (RegularExpressionAttributeData.TryFromAttributeData(property, out var regexData, out var attribute))
 		{
 			regularExpressionAttribute =
-				attribute is not null && property.Type.SpecialType != SpecialType.System_String
+				attribute is not null && propertyType.SpecialType != SpecialType.System_String
 					? GeneratorResult<RegularExpressionAttributeData>.Create(
 						regexData,
 						DiagnosticInfo.Create(
 							DiagnosticLibrary.UnsupportedDataAnnotationsUsage,
-							attribute,
-							string.Format(
-								CultureInfo.InvariantCulture,
-								"RegularExpressionAttribute can only be applied to string properties, but '{0}' is '{1}'.",
-								property.Name,
-								propertyType.MetadataFullName
-							)
+							GetAttributeLocation(attribute),
+							property.Name
 						)
 					)
 					: GeneratorResult<RegularExpressionAttributeData>.Create(regexData);
@@ -220,30 +238,36 @@ static partial class SourceGenLibrary
 		var base64StringAttribute = Base64StringAttributeData.FromAttributeData(property);
 		var deniedValuesAttribute = DeniedValuesAttributeData.FromAttributeData(property);
 		var allowedValuesAttribute = AllowedValuesAttributeData.FromAttributeData(property);
+
+		AddUnsupportedDataAnnotationsDiagnostics(
+			property,
+			propertyType,
+			originalPropertyType,
+			urlAttribute,
+			phoneAttribute,
+			creditCardAttribute,
+			base64StringAttribute,
+			emailAddressAttribute,
+			allowedValuesAttribute,
+			deniedValuesAttribute,
+			diagnostics
+		);
+
 		var lengthAttribute = GeneratorResult<LengthAttributeData>.Empty;
 		if (LengthAttributeData.TryFromAttributeData(property, out var lengthData, out attribute))
 		{
-			lengthAttribute =
-				attribute is not null && !supportsLengthAttribute
-					? GeneratorResult<LengthAttributeData>.Create(
-						lengthData,
-						DiagnosticInfo.Create(
-							DiagnosticLibrary.UnsupportedLengthAttributeTarget,
-							attribute,
-							string.Format(
-								CultureInfo.InvariantCulture,
-								"LengthAttribute cannot be applied to '{0}' because '{1}' exposes no accessible Length or Count member and is not an enumerable shape that ZodSharp can count safely.",
-								property.Name,
-								propertyType.MetadataFullName
-							)
-						)
-					)
-					: GeneratorResult<LengthAttributeData>.Create(lengthData);
+			lengthAttribute = BuildLengthAttributeResult(
+				property,
+				lengthData,
+				attribute,
+				propertyType,
+				originalPropertyType
+			);
 		}
 
 		var rangeAttribute = RangeAttributeData.FromAttributeData(property.GetAttributes(), out attribute);
 		var rangeAttributeResult = TryBuildRangeBoundaryExpressions(
-			property.Type,
+			originalPropertyType,
 			rangeAttribute,
 			out var minimumExpression,
 			out var maximumExpression
@@ -259,37 +283,35 @@ static partial class SourceGenLibrary
 				rangeAttribute,
 				DiagnosticInfo.Create(
 					DiagnosticLibrary.UnsupportedDataAnnotationsUsage,
-					attribute!,
-					string.Format(
-						CultureInfo.InvariantCulture,
-						"RangeAttribute can only be applied to numeric properties, but '{0}' is '{1}'.",
-						property.Name,
-						propertyType.MetadataFullName
-					)
+					GetAttributeLocation(attribute),
+					property.Name
 				)
 			);
 
-		if (attribute is not null && !TypeHelpers.IsNumericType(property.Type))
-		{
-			diagnostics.Add(
-				DiagnosticInfo.Create(
-					DiagnosticLibrary.UnsupportedDataAnnotationsUsage,
-					attribute,
-					string.Format(
-						CultureInfo.InvariantCulture,
-						"RangeAttribute can only be applied to numeric properties, but '{0}' is '{1}'.",
-						property.Name,
-						propertyType.MetadataFullName
-					)
-				)
-			);
-		}
+		ValidateCompareProperty(property, compareAttribute, diagnostics);
+
+		ValidateErrorMessageResourceConfiguration(property, diagnostics);
+
+		diagnostics.AddRange(regularExpressionAttribute.Diagnostics);
+		diagnostics.AddRange(lengthAttribute.Diagnostics);
+		if (rangeAttribute.Exists)
+			diagnostics.AddRange(rangeAttributeResult.Diagnostics);
+
+		var isEnum =
+			TypeHelpers.UnwrapNullableType(originalPropertyType) is INamedTypeSymbol { TypeKind: TypeKind.Enum };
 
 		return GeneratorResult<ZodPropertyDescriptor>.Create(
 			new(
 				propertyType,
 				property.Name,
+				displayName,
 				propertyCanBeNull,
+				isEnum,
+				validationKind,
+				elementType,
+				elementTypeCanBeNull,
+				nestedSchemaType,
+				lengthAccessor,
 				new(
 					requiredAttribute,
 					compareAttribute,
@@ -313,6 +335,327 @@ static partial class SourceGenLibrary
 		);
 	}
 
+	static TypeIdentity CreateTypeIdentity(ITypeSymbol typeSymbol)
+	{
+		if (typeSymbol is IArrayTypeSymbol arrayType)
+		{
+			var elementIdentity = CreateTypeIdentity(arrayType.ElementType);
+			return new TypeIdentity($"{elementIdentity.Name}[]", elementIdentity.Namespace);
+		}
+
+		return new TypeIdentity(typeSymbol);
+	}
+
+	static PropertyValidationKind GetPropertyValidationKind(TypeIdentity propertyType, ITypeSymbol originalType)
+	{
+		if (propertyType.SpecialType == SpecialType.System_String)
+			return PropertyValidationKind.String;
+
+		if (TypeHelpers.IsNumericType(originalType))
+			return PropertyValidationKind.Numeric;
+
+		if (
+			originalType is IArrayTypeSymbol
+			|| TypeHelpers.IsOrImplements(originalType, TypeLibrary.Collections.IEnumerable)
+			|| TypeHelpers.IsOrImplements(originalType, TypeLibrary.Collections.IEnumerableT)
+		)
+		{
+			return PropertyValidationKind.Collection;
+		}
+
+		// If the original type is a source-defined complex type, we can generate a nested schema for it.
+		return originalType is INamedTypeSymbol namedType && IsSourceDefinedComplexType(namedType)
+			? PropertyValidationKind.Complex
+			: PropertyValidationKind.Unsupported;
+	}
+
+	static TypeIdentity? GetCollectionElementTypeIdentity(ITypeSymbol propertyType)
+	{
+		if (propertyType is IArrayTypeSymbol arrayType)
+			return CreateTypeIdentity(arrayType.ElementType);
+
+		if (propertyType is not INamedTypeSymbol namedType)
+			return null;
+
+		foreach (var iface in namedType.AllInterfaces)
+		{
+			if (TypeHelpers.Implements(iface, TypeLibrary.Collections.IEnumerableT))
+				return new TypeIdentity(iface.TypeArguments[0]);
+		}
+
+		return namedType.IsGenericType && TypeHelpers.Implements(namedType, TypeLibrary.Collections.IEnumerableT)
+			? new TypeIdentity(namedType.TypeArguments[0])
+			: null;
+	}
+
+	static ITypeSymbol? GetCollectionElementTypeSymbol(ITypeSymbol propertyType)
+	{
+		if (propertyType is IArrayTypeSymbol arrayType)
+			return arrayType.ElementType;
+
+		if (propertyType is not INamedTypeSymbol namedType)
+			return null;
+
+		foreach (var iface in namedType.AllInterfaces)
+		{
+			if (TypeHelpers.Implements(iface, TypeLibrary.Collections.IEnumerableT))
+				return iface.TypeArguments[0];
+		}
+
+		return namedType.IsGenericType && TypeHelpers.Implements(namedType, TypeLibrary.Collections.IEnumerableT)
+			? namedType.TypeArguments[0]
+			: null;
+	}
+
+	static TypeIdentity? GetNestedSchemaTypeIdentity(IPropertySymbol property, PropertyValidationKind validationKind)
+	{
+		var targetType =
+			validationKind == PropertyValidationKind.Collection
+				? GetCollectionElementTypeSymbol(property.Type)
+				: property.Type;
+
+		if (targetType is not INamedTypeSymbol namedType || !IsSourceDefinedComplexType(namedType))
+			return null;
+
+		var identity = new TypeIdentity(namedType);
+		return identity with { Name = $"{identity.Name}Schema" };
+	}
+
+	static LengthAccessor ClassifyLengthAccessor(ITypeSymbol propertyType)
+	{
+		if (propertyType.SpecialType == SpecialType.System_String || propertyType is IArrayTypeSymbol)
+			return new("propertyValue.Length", "array", true);
+
+		if (propertyType is INamedTypeSymbol namedType)
+		{
+			if (TypeHelpers.IsOrImplements(namedType, TypeLibrary.Collections.ICollectionT))
+				return new("propertyValue.Count", "array", true);
+
+			if (TypeHelpers.IsOrImplements(namedType, TypeLibrary.Collections.IEnumerable))
+				return new(
+					"global::ZodSharp.Optimizations.CollectionCountHelper.GetCount(propertyValue)",
+					"array",
+					true
+				);
+		}
+
+		return new(string.Empty, string.Empty, false);
+	}
+
+	static string GetDisplayName(IPropertySymbol property)
+	{
+		var display = DisplayAttributeData.FromAttributeData(property);
+		return display.Exists && !string.IsNullOrEmpty(display.Name) ? display.Name! : property.Name;
+	}
+
+	static Location GetAttributeLocation(AttributeData? attributeData) =>
+		attributeData?.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? Location.None;
+
+	static AttributeData? FindAttribute(IPropertySymbol property, string metadataName)
+	{
+		foreach (var attribute in property.GetAttributes())
+		{
+			if (attribute.AttributeClass?.MetadataName == metadataName)
+				return attribute;
+		}
+
+		return null;
+	}
+
+	static void AddUnsupportedDataAnnotationsUsage(
+		IPropertySymbol property,
+		AttributeData? attribute,
+		ImmutableArray<DiagnosticInfo>.Builder diagnostics
+	) =>
+		diagnostics.Add(
+			DiagnosticInfo.Create(
+				DiagnosticLibrary.UnsupportedDataAnnotationsUsage,
+				GetAttributeLocation(attribute),
+				property.Name
+			)
+		);
+
+	static void AddUnsupportedDataAnnotationsUsage(
+		IPropertySymbol property,
+		string attributeMetadataName,
+		ImmutableArray<DiagnosticInfo>.Builder diagnostics
+	) => AddUnsupportedDataAnnotationsUsage(property, FindAttribute(property, attributeMetadataName), diagnostics);
+
+	static void AddUnsupportedDataAnnotationsDiagnostics(
+		IPropertySymbol property,
+		TypeIdentity propertyType,
+		ITypeSymbol originalPropertyType,
+		UrlAttribute urlAttribute,
+		PhoneAttribute phoneAttribute,
+		CreditCardAttributeData creditCardAttribute,
+		Base64StringAttributeData base64StringAttribute,
+		EmailAddressAttributeData emailAddressAttribute,
+		AllowedValuesAttributeData allowedValuesAttribute,
+		DeniedValuesAttributeData deniedValuesAttribute,
+		ImmutableArray<DiagnosticInfo>.Builder diagnostics
+	)
+	{
+		var isString = propertyType.SpecialType == SpecialType.System_String;
+
+		if (urlAttribute.Exists && !isString)
+			AddUnsupportedDataAnnotationsUsage(property, "UrlAttribute", diagnostics);
+		if (phoneAttribute.Exists && !isString)
+			AddUnsupportedDataAnnotationsUsage(property, "PhoneAttribute", diagnostics);
+		if (creditCardAttribute.Exists && !isString)
+			AddUnsupportedDataAnnotationsUsage(property, "CreditCardAttribute", diagnostics);
+		if (base64StringAttribute.Exists && !isString)
+			AddUnsupportedDataAnnotationsUsage(property, "Base64StringAttribute", diagnostics);
+		if (emailAddressAttribute.Exists && !isString)
+			AddUnsupportedDataAnnotationsUsage(property, "EmailAddressAttribute", diagnostics);
+
+		if (
+			(allowedValuesAttribute.Exists || deniedValuesAttribute.Exists)
+			&& !IsValueSetSupportedType(originalPropertyType)
+		)
+		{
+			var valuesAttribute =
+				FindAttribute(property, "AllowedValuesAttribute") ?? FindAttribute(property, "DeniedValuesAttribute");
+			if (valuesAttribute is not null)
+				AddUnsupportedDataAnnotationsUsage(property, valuesAttribute, diagnostics);
+		}
+	}
+
+	static GeneratorResult<LengthAttributeData> BuildLengthAttributeResult(
+		IPropertySymbol property,
+		LengthAttributeData lengthData,
+		AttributeData? attribute,
+		TypeIdentity propertyType,
+		ITypeSymbol originalPropertyType
+	)
+	{
+		var supportsLengthAttribute =
+			propertyType.SpecialType == SpecialType.System_String
+			|| originalPropertyType is IArrayTypeSymbol
+			|| TypeHelpers.IsOrImplements(originalPropertyType, TypeLibrary.Collections.IEnumerable)
+			|| TypeHelpers.IsOrImplements(originalPropertyType, TypeLibrary.Collections.IEnumerableT);
+
+		if (attribute is not null && !supportsLengthAttribute)
+		{
+			return GeneratorResult<LengthAttributeData>.Create(
+				lengthData,
+				DiagnosticInfo.Create(
+					DiagnosticLibrary.UnsupportedLengthAttributeTarget,
+					GetAttributeLocation(attribute),
+					property.Name
+				)
+			);
+		}
+
+		// If the minimum length is greater than the maximum length, this is an invalid configuration.
+		return lengthData.MinimumLength > lengthData.MaximumLength
+			? GeneratorResult<LengthAttributeData>.Create(
+				lengthData,
+				DiagnosticInfo.Create(
+					DiagnosticLibrary.InvalidLengthAttribute,
+					GetAttributeLocation(attribute),
+					property.Name
+				)
+			)
+			: GeneratorResult<LengthAttributeData>.Create(lengthData);
+	}
+
+	static void ValidateCompareProperty(
+		IPropertySymbol property,
+		CompareAttributeData compareAttribute,
+		ImmutableArray<DiagnosticInfo>.Builder diagnostics
+	)
+	{
+		if (!compareAttribute.Exists)
+			return;
+
+		var otherProperty = property
+			.ContainingType?.GetMembers(compareAttribute.OtherProperty)
+			.OfType<IPropertySymbol>()
+			.FirstOrDefault();
+		if (otherProperty is null)
+		{
+			diagnostics.Add(
+				DiagnosticInfo.Create(
+					DiagnosticLibrary.ComparePropertyNotFound,
+					GetAttributeLocation(FindAttribute(property, "CompareAttribute")),
+					property.Name,
+					compareAttribute.OtherProperty
+				)
+			);
+		}
+	}
+
+	static bool IsValueSetSupportedType(ITypeSymbol propertyType)
+	{
+		var unwrapped = TypeHelpers.UnwrapNullableType(propertyType);
+		if (unwrapped is INamedTypeSymbol { TypeKind: TypeKind.Enum })
+			return true;
+
+		// We support value sets for primitive types that can be compared for equality.
+		return unwrapped.SpecialType
+			is SpecialType.System_String
+				or SpecialType.System_Char
+				or SpecialType.System_Boolean
+				or SpecialType.System_Byte
+				or SpecialType.System_SByte
+				or SpecialType.System_Int16
+				or SpecialType.System_UInt16
+				or SpecialType.System_Int32
+				or SpecialType.System_UInt32
+				or SpecialType.System_Int64
+				or SpecialType.System_UInt64
+				or SpecialType.System_Single
+				or SpecialType.System_Double
+				or SpecialType.System_Decimal;
+	}
+
+	static void ValidateErrorMessageResourceConfiguration(
+		IPropertySymbol property,
+		ImmutableArray<DiagnosticInfo>.Builder diagnostics
+	)
+	{
+		foreach (var attribute in property.GetAttributes())
+		{
+			if (
+				attribute.AttributeClass is null
+				|| !TypeHelpers.InheritsFrom(attribute.AttributeClass, TypeLibrary.DataAnnotations.ValidationAttribute)
+			)
+			{
+				continue;
+			}
+
+			var hasResourceName = false;
+			var hasResourceType = false;
+			foreach (var namedArgument in attribute.NamedArguments)
+			{
+				if (
+					namedArgument.Key == "ErrorMessageResourceName"
+					&& namedArgument.Value.Value is string { Length: > 0 }
+				)
+					hasResourceName = true;
+				else if (namedArgument.Key == "ErrorMessageResourceType" && namedArgument.Value.Value is not null)
+					hasResourceType = true;
+			}
+
+			if (hasResourceName == hasResourceType)
+				continue;
+
+			diagnostics.Add(
+				DiagnosticInfo.Create(
+					DiagnosticLibrary.InvalidDataAnnotationsErrorMessage,
+					GetAttributeLocation(attribute),
+					property.Name
+				)
+			);
+		}
+	}
+
+	static bool IsSourceDefinedComplexType(INamedTypeSymbol type) =>
+		type.Locations.Any(static location => location.IsInSource)
+		&& type.TypeKind is TypeKind.Class or TypeKind.Struct
+		&& !type.IsAbstract
+		&& !type.IsStatic;
+
 	static bool TryGetNestedSchemaType(IPropertySymbol property, out INamedTypeSymbol nested)
 	{
 		var propertyType = TypeHelpers.UnwrapNullableType(property.Type);
@@ -327,9 +670,7 @@ static partial class SourceGenLibrary
 
 		propertyType = TypeHelpers.UnwrapNullableType(propertyType);
 		nested = propertyType as INamedTypeSymbol ?? null!;
-		return nested is not null
-			&& nested.Locations.Any(static location => location.IsInSource)
-			&& !ZodSchemaGenerator.IsScalarType(nested);
+		return nested is not null && IsSourceDefinedComplexType(nested);
 	}
 
 	static bool TryBuildRangeBoundaryExpressions(
