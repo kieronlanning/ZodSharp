@@ -2,7 +2,7 @@ namespace ZodSharp.SourceGenerators.Helpers;
 
 static class CodeGenHelpers
 {
-	public static CodeWriter WriteRule(
+	public static CodeWriter Rule(
 		this CodeWriter writer,
 		string propertyName,
 		string comparison,
@@ -12,8 +12,13 @@ static class CodeGenHelpers
 	{
 		using (writer.OpenBlockScope($"if ({comparison})"))
 		{
-			writer.WriteLine(
-				$"errors ??= new {TypeLibrary.Collections.List.MakeGeneric(TypeLibrary.ValidationError)}();"
+			writer.IfBlock(
+				"errors is null",
+				ifBody =>
+					ifBody.Assignment(
+						"errors",
+						$"new {TypeLibrary.Collections.List.MakeGeneric(TypeLibrary.ValidationError)}()"
+					)
 			);
 			writer.OpenDelimitedBlock(
 				$"errors.Add(new {TypeLibrary.ValidationError}",
@@ -21,9 +26,9 @@ static class CodeGenHelpers
 				"));",
 				bodyWriter =>
 				{
-					bodyWriter.Write(Quote(errorCode)).WriteLine(",");
-					bodyWriter.Write(Quote(errorMessage)).WriteLine(",");
-					bodyWriter.WriteLine($"new[] {{ \"{propertyName}\" }}");
+					bodyWriter.Write(Quote(errorCode)).Line(",");
+					bodyWriter.Write(Quote(errorMessage)).Line(",");
+					bodyWriter.Line($"new[] {{ \"{propertyName}\" }}");
 				}
 			);
 		}

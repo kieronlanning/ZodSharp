@@ -27,17 +27,15 @@ partial class ZodSchemaGenerator
 		var maximumDisplay = Convert.ToString(range.Maximum, CultureInfo.InvariantCulture) ?? string.Empty;
 		var messageExpression = BuildMessageExpression(
 			range.ValidationAttribute,
-			CodeGenHelpers.Quote(
-				$"Field '{displayName}' must be {minimumDescription} {minimumDisplay} and {maximumDescription} {maximumDisplay}."
-			),
-			CodeGenHelpers.Quote(displayName),
-			CodeGenHelpers.Quote(minimumDisplay),
-			CodeGenHelpers.Quote(maximumDisplay)
+			$"Field '{displayName}' must be {minimumDescription} {minimumDisplay} and {maximumDescription} {maximumDisplay}.".Surround(),
+			displayName.Surround(),
+			minimumDisplay.Surround(),
+			maximumDisplay.Surround()
 		);
 
 		using (writer.OpenBlockScope())
 		{
-			writer.WriteLine($"var {propertyValueName} = value.{propertyName};");
+			writer.Assignment("var", propertyValueName, $"value.{propertyName}");
 			using (
 				writer.OpenBlockScope(
 					$"if ({propertyValueName} {minComparison} {GetRangeMinimumFieldName(propertyName)} || {propertyValueName} {maxComparison} {GetRangeMaximumFieldName(propertyName)})"
