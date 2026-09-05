@@ -222,29 +222,32 @@ partial class ZodSchemaGenerator
 					using (writer.IfBlockScope($"({propertyValueName} is not null)"))
 					{
 						writer.Assignment("var", propertyLengthName, $"{propertyValueName}.Length");
-						using (writer.OpenBlockScope($"if ({propertyLengthName} < {length.MinimumLength})"))
-						{
-							WriteValidationError(
-								writer,
-								"too_small",
-								tooSmallMessage,
-								propertyPath,
-								"string",
-								minimum: length.MinimumLength
-							);
-						}
 
-						using (writer.OpenBlockScope($"else if ({propertyLengthName} > {length.MaximumLength})"))
-						{
-							WriteValidationError(
-								writer,
-								"too_big",
-								tooBigMessage,
-								propertyPath,
-								"string",
-								maximum: length.MaximumLength
+						writer
+							.IfBlock(
+								$"{propertyLengthName} < {length.MinimumLength}",
+								w =>
+									WriteValidationError(
+										w,
+										"too_small",
+										tooSmallMessage,
+										propertyPath,
+										"string",
+										minimum: length.MinimumLength
+									)
+							)
+							.ElseIf(
+								$"{propertyLengthName} > {length.MaximumLength}",
+								w =>
+									WriteValidationError(
+										w,
+										"too_big",
+										tooBigMessage,
+										propertyPath,
+										"string",
+										maximum: length.MaximumLength
+									)
 							);
-						}
 					}
 				}
 
@@ -277,7 +280,7 @@ partial class ZodSchemaGenerator
 				writer.Assignment("var", propertyLengthName, $"{propertyValueName}.Length");
 				if (stringLength.MinimumLength > 0)
 				{
-					using (writer.OpenBlockScope($"if ({propertyLengthName} < {stringLength.MinimumLength})"))
+					using (writer.IfBlockScope($"{propertyLengthName} < {stringLength.MinimumLength}"))
 					{
 						WriteValidationError(
 							writer,
@@ -290,7 +293,7 @@ partial class ZodSchemaGenerator
 					}
 				}
 
-				using (writer.OpenBlockScope($"if ({propertyLengthName} > {stringLength.MaximumLength})"))
+				using (writer.IfBlockScope($"{propertyLengthName} > {stringLength.MaximumLength}"))
 				{
 					WriteValidationError(
 						writer,

@@ -10,7 +10,7 @@ static class CodeGenHelpers
 		string errorMessage
 	)
 	{
-		using (writer.OpenBlockScope($"if ({comparison})"))
+		using (writer.IfBlockScope(comparison))
 		{
 			writer.IfBlock(
 				"errors is null",
@@ -20,6 +20,7 @@ static class CodeGenHelpers
 						$"new {TypeLibrary.Collections.List.MakeGeneric(TypeLibrary.ValidationError)}()"
 					)
 			);
+
 			writer.OpenDelimitedBlock(
 				$"errors.Add(new {TypeLibrary.ValidationError}",
 				"(",

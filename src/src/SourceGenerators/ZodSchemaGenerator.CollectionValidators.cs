@@ -36,7 +36,7 @@ partial class ZodSchemaGenerator
 		var origin = lengthAccessor.Origin;
 
 		writer.Assignment("var", propertyValueName, $"value.{propertyName}");
-		using (writer.OpenBlockScope($"if ({propertyValueName} is not null)"))
+		using (writer.IfBlockScope($"{propertyValueName} is not null"))
 		{
 			writer.Assignment("var", "propertyValue", propertyValueName);
 			writer.Assignment("var", propertyLengthName, lengthAccessor.LengthExpression);
@@ -61,7 +61,7 @@ partial class ZodSchemaGenerator
 						length.MinimumLength.ToString(CultureInfo.InvariantCulture)
 					);
 
-					using (writer.OpenBlockScope($"if ({propertyLengthName} < {length.MinimumLength})"))
+					using (writer.IfBlockScope($"{propertyLengthName} < {length.MinimumLength}"))
 					{
 						WriteValidationError(
 							writer,
@@ -73,7 +73,9 @@ partial class ZodSchemaGenerator
 						);
 					}
 
+#pragma warning disable PSGFR23 // ElseIfScope is not yet available in Purview.SourceGeneratorFramework
 					using (writer.OpenBlockScope($"else if ({propertyLengthName} > {length.MaximumLength})"))
+#pragma warning restore PSGFR23
 					{
 						WriteValidationError(
 							writer,
@@ -97,7 +99,7 @@ partial class ZodSchemaGenerator
 					minLength.ToString(CultureInfo.InvariantCulture)
 				);
 
-				using (writer.OpenBlockScope($"if ({propertyLengthName} < {minLength})"))
+				using (writer.IfBlockScope($"{propertyLengthName} < {minLength}"))
 				{
 					WriteValidationError(
 						writer,
@@ -120,7 +122,7 @@ partial class ZodSchemaGenerator
 					maxLength.ToString(CultureInfo.InvariantCulture)
 				);
 
-				using (writer.OpenBlockScope($"if ({propertyLengthName} > {maxLength})"))
+				using (writer.IfBlockScope($"{propertyLengthName} > {maxLength}"))
 				{
 					WriteValidationError(
 						writer,

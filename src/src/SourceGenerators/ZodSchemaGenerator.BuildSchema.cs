@@ -459,14 +459,14 @@ partial class ZodSchemaGenerator
 				: $"value.{propertyName} == null";
 
 			writer.Rule(propertyName, comparison, "missing_field", errorMessage);
-			block = writer.OpenBlockScope("else");
+			block = writer.ElseScope();
 			GenerateValueSetValidations(writer, property);
 		}
 		else
 		{
 			GenerateValueSetValidations(writer, property);
 			if (property.CanBeNull)
-				block = writer.OpenBlockScope($"if (value.{propertyName} != null)");
+				block = writer.IfBlockScope($"value.{propertyName} != null");
 		}
 
 		GenerateTypeSpecificValidations(writer, property);
@@ -543,7 +543,7 @@ partial class ZodSchemaGenerator
 		var schemaType = property.NestedSchemaType.Value;
 
 		writer.Assignment("var", collectionValueName, $"value.{propertyName}");
-		using (writer.OpenBlockScope($"if ({collectionValueName} is not null)"))
+		using (writer.IfBlockScope($"{collectionValueName} is not null"))
 		{
 			writer.Assignment("var", indexName, "0");
 			using (writer.ForeachScope($"var {itemValueName} in {collectionValueName}"))

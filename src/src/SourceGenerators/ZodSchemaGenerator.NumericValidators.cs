@@ -37,8 +37,8 @@ partial class ZodSchemaGenerator
 		{
 			writer.Assignment("var", propertyValueName, $"value.{propertyName}");
 			using (
-				writer.OpenBlockScope(
-					$"if ({propertyValueName} {minComparison} {GetRangeMinimumFieldName(propertyName)} || {propertyValueName} {maxComparison} {GetRangeMaximumFieldName(propertyName)})"
+				writer.IfBlockScope(
+					$"{propertyValueName} {minComparison} {GetRangeMinimumFieldName(propertyName)} || {propertyValueName} {maxComparison} {GetRangeMaximumFieldName(propertyName)}"
 				)
 			)
 			{
