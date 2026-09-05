@@ -26,8 +26,8 @@ static class CodeGenHelpers
 				"));",
 				bodyWriter =>
 				{
-					bodyWriter.Write(Quote(errorCode)).Line(",");
-					bodyWriter.Write(Quote(errorMessage)).Line(",");
+					bodyWriter.Write(errorCode.Surround()).Line(",");
+					bodyWriter.Write(errorMessage.Surround()).Line(",");
 					bodyWriter.Line($"new[] {{ \"{propertyName}\" }}");
 				}
 			);
@@ -42,8 +42,6 @@ static class CodeGenHelpers
 		string.IsNullOrEmpty(propertyName)
 			? suffix
 			: char.ToLowerInvariant(propertyName[0]) + propertyName.Substring(1) + suffix;
-
-	public static string Quote(string value) => $"\"{value.Replace("\\", "\\\\").Replace("\"", "\\\"")}\"";
 
 	public static string QuoteChar(char value)
 	{

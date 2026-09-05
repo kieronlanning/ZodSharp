@@ -162,11 +162,7 @@ partial class ZodSchemaGenerator
 	{
 		var propertyName = property.Name;
 		var displayName = property.DisplayName;
-		var messageExpression = BuildErrorMessageExpression(
-			validationAttribute,
-			defaultFormat,
-			CodeGenHelpers.Quote(displayName)
-		);
+		var messageExpression = BuildErrorMessageExpression(validationAttribute, defaultFormat, displayName.Surround());
 
 		using (writer.OpenBlockScope())
 		{

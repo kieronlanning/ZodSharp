@@ -592,31 +592,21 @@ partial class ZodSchemaGenerator
 		writer.Assignment("var", propertyValueName, $"value.{propertyName}");
 		if (property.CanBeNull)
 		{
-			using (writer.OpenBlockScope($"if ({propertyValueName} is not null)"))
+			using (writer.IfBlockScope($"{propertyValueName} is not null"))
 			{
 				writer.Assignment("var", nestedResultName, $"{schemaType}.Validate({propertyValueName})");
-				using (writer.OpenBlockScope($"if (!{nestedResultName}.IsSuccess)"))
+				using (writer.IfBlockScope($"!{nestedResultName}.IsSuccess"))
 				{
-					writer.MethodCall(
-						"AddNestedErrors",
-						"ref errors",
-						nestedResultName,
-						CodeGenHelpers.Quote(propertyName)
-					);
+					writer.MethodCall("AddNestedErrors", "ref errors", nestedResultName, propertyName.Surround());
 				}
 			}
 		}
 		else
 		{
 			writer.Assignment("var", nestedResultName, $"{schemaType}.Validate({propertyValueName})");
-			using (writer.OpenBlockScope($"if (!{nestedResultName}.IsSuccess)"))
+			using (writer.IfBlockScope($"!{nestedResultName}.IsSuccess"))
 			{
-				writer.MethodCall(
-					"AddNestedErrors",
-					"ref errors",
-					nestedResultName,
-					CodeGenHelpers.Quote(propertyName)
-				);
+				writer.MethodCall("AddNestedErrors", "ref errors", nestedResultName, propertyName.Surround());
 			}
 		}
 	}
@@ -634,7 +624,7 @@ partial class ZodSchemaGenerator
 				continue;
 
 			writer.Field(
-				new FieldDeclarationOptions(
+				new(
 					CodeGenHelpers.GetPathFieldName(property.Value.Name),
 					pathFieldType,
 					TypeDeclarationAccessibility.Private
@@ -642,7 +632,9 @@ partial class ZodSchemaGenerator
 				{
 					IsStatic = true,
 					IsReadOnly = true,
-					Initializer = $"{TypeLibrary.Collections.ImmutableArray}.Create({property.Value.Name.Surround()})",
+					Initializer = TypeLibrary.Collections.ImmutableArray.StaticMember(
+						$"Create({property.Value.Name.Surround()})"
+					),
 				}
 			);
 		}
@@ -668,11 +660,7 @@ partial class ZodSchemaGenerator
 			{
 				var pattern = prop.ValidationAttributes.RegularExpression.Value.Pattern;
 				writer.Field(
-					new FieldDeclarationOptions(
-						GetRegexFieldName(prop.Name),
-						regexType,
-						TypeDeclarationAccessibility.Private
-					)
+					new(GetRegexFieldName(prop.Name), regexType, TypeDeclarationAccessibility.Private)
 					{
 						IsStatic = true,
 						IsReadOnly = true,
@@ -687,11 +675,7 @@ partial class ZodSchemaGenerator
 				var propertyType = prop.PropertyType.AsTypeReference();
 				var range = prop.ValidationAttributes.Range.Value;
 				writer.Field(
-					new FieldDeclarationOptions(
-						GetRangeMinimumFieldName(prop.Name),
-						propertyType,
-						TypeDeclarationAccessibility.Private
-					)
+					new(GetRangeMinimumFieldName(prop.Name), propertyType, TypeDeclarationAccessibility.Private)
 					{
 						IsStatic = true,
 						IsReadOnly = true,
@@ -699,11 +683,7 @@ partial class ZodSchemaGenerator
 					}
 				);
 				writer.Field(
-					new FieldDeclarationOptions(
-						GetRangeMaximumFieldName(prop.Name),
-						propertyType,
-						TypeDeclarationAccessibility.Private
-					)
+					new(GetRangeMaximumFieldName(prop.Name), propertyType, TypeDeclarationAccessibility.Private)
 					{
 						IsStatic = true,
 						IsReadOnly = true,
@@ -726,40 +706,28 @@ partial class ZodSchemaGenerator
 		var typeParameterT = new TypeIdentity("T", null).AsTypeReference();
 
 		writer.Method(
-			new MethodDeclarationOptions("AddError", TypeDeclarationAccessibility.Private)
+			new("AddError", TypeDeclarationAccessibility.Private)
 			{
 				IsStatic = true,
 				Parameters =
 				[
-					new ParameterDeclarationOptions("errors", listOfErrorsType.Nullable(writer))
-					{
-						Modifier = ParameterModifier.Ref,
-					},
-					new ParameterDeclarationOptions("error", errorType),
+					new("errors", listOfErrorsType.Nullable(writer)) { Modifier = ParameterModifier.Ref },
+					new("error", errorType),
 				],
 			},
 			body => body.MethodCallOn($"(errors ??= new {listOfErrorsType}())", "Add", "error")
 		);
 
 		writer.Method(
-			new MethodDeclarationOptions("AddNestedErrors", TypeDeclarationAccessibility.Private)
+			new("AddNestedErrors", TypeDeclarationAccessibility.Private)
 			{
 				IsStatic = true,
 				GenericTypes = [new GenericTypeParameterOptions("T")],
 				Parameters =
 				[
-					new ParameterDeclarationOptions("errors", listOfErrorsType.Nullable(writer))
-					{
-						Modifier = ParameterModifier.Ref,
-					},
-					new ParameterDeclarationOptions(
-						"nestedResult",
-						TypeLibrary.ValidationResult.MakeGeneric(typeParameterT).AsTypeReference()
-					),
-					new ParameterDeclarationOptions(
-						"prefix",
-						new TypeIdentity(SpecialType.System_String).AsTypeReference()
-					),
+					new("errors", listOfErrorsType.Nullable(writer)) { Modifier = ParameterModifier.Ref },
+					new("nestedResult", TypeLibrary.ValidationResult.MakeGeneric(typeParameterT).AsTypeReference()),
+					new("prefix", new TypeIdentity(SpecialType.System_String).AsTypeReference()),
 				],
 			},
 			body =>
@@ -775,28 +743,16 @@ partial class ZodSchemaGenerator
 		);
 
 		writer.Method(
-			new MethodDeclarationOptions("AddNestedErrors", TypeDeclarationAccessibility.Private)
+			new("AddNestedErrors", TypeDeclarationAccessibility.Private)
 			{
 				IsStatic = true,
 				GenericTypes = [new GenericTypeParameterOptions("T")],
 				Parameters =
 				[
-					new ParameterDeclarationOptions("errors", listOfErrorsType.Nullable(writer))
-					{
-						Modifier = ParameterModifier.Ref,
-					},
-					new ParameterDeclarationOptions(
-						"nestedResult",
-						TypeLibrary.ValidationResult.MakeGeneric(typeParameterT).AsTypeReference()
-					),
-					new ParameterDeclarationOptions(
-						"prefix",
-						new TypeIdentity(SpecialType.System_String).AsTypeReference()
-					),
-					new ParameterDeclarationOptions(
-						"index",
-						new TypeIdentity(SpecialType.System_Int32).AsTypeReference()
-					),
+					new("errors", listOfErrorsType.Nullable(writer)) { Modifier = ParameterModifier.Ref },
+					new("nestedResult", TypeLibrary.ValidationResult.MakeGeneric(typeParameterT).AsTypeReference()),
+					new("prefix", new TypeIdentity(SpecialType.System_String).AsTypeReference()),
+					new("index", new TypeIdentity(SpecialType.System_Int32).AsTypeReference()),
 				],
 			},
 			body =>
@@ -813,7 +769,7 @@ partial class ZodSchemaGenerator
 
 		writer.NewLine();
 		writer.Method(
-			new MethodDeclarationOptions(
+			new(
 				"FormatCount",
 				new TypeIdentity(SpecialType.System_String).AsTypeReference(),
 				TypeDeclarationAccessibility.Private
@@ -822,18 +778,9 @@ partial class ZodSchemaGenerator
 				IsStatic = true,
 				Parameters =
 				[
-					new ParameterDeclarationOptions(
-						"count",
-						new TypeIdentity(SpecialType.System_Int32).AsTypeReference()
-					),
-					new ParameterDeclarationOptions(
-						"singularNoun",
-						new TypeIdentity(SpecialType.System_String).AsTypeReference()
-					),
-					new ParameterDeclarationOptions(
-						"pluralNoun",
-						new TypeIdentity(SpecialType.System_String).AsTypeReference()
-					),
+					new("count", new TypeIdentity(SpecialType.System_Int32).AsTypeReference()),
+					new("singularNoun", new TypeIdentity(SpecialType.System_String).AsTypeReference()),
+					new("pluralNoun", new TypeIdentity(SpecialType.System_String).AsTypeReference()),
 				],
 			},
 			body => body.Return("count == 1 ? $\"1 {singularNoun}\" : $\"{count} {pluralNoun}\"")
