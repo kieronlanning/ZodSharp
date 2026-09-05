@@ -10,7 +10,7 @@
 		<!-- Set project-by-project -->
 		<IsPackable>false</IsPackable>
 		<ExcludePurviewTelemetry>true</ExcludePurviewTelemetry>
-		<RepositoryUrl>https://github.com/guinhx/ZodSharp</RepositoryUrl>
+		<RepositoryUrl>https://github.com/purview-dev/zodsharp</RepositoryUrl>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -26,8 +26,8 @@
 
 	<PropertyGroup Condition="'$(IsPackable)' == 'true'">
 		<Authors>ZodSharp Contributors</Authors>
-		<PackageProjectUrl>https://github.com/guinhx/ZodSharp</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/guinhx/ZodSharp</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/purview-dev/zodsharp</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/purview-dev/zodsharp</RepositoryUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>

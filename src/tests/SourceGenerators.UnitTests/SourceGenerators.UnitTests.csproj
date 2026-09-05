@@ -2,6 +2,7 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
 		<PackageReference Include="Purview.SourceGeneratorFramework.Testing.TUnit" />
+		<AssemblyName>Purview.ZodSharp.SourceGenerators.UnitTests</AssemblyName>
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\ZodSharp\ZodSharp.csproj" />

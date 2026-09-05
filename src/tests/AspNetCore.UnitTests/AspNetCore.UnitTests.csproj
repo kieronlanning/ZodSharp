@@ -2,6 +2,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\AspNetCore\AspNetCore.csproj" />
 		<ProjectReference Include="..\..\src\ZodSharp\ZodSharp.csproj" />
+		<AssemblyName>Purview.ZodSharp.AspNetCore.UnitTests</AssemblyName>
 	</ItemGroup>
 	<ItemGroup>
 		<!-- Runs the generator against the test project.

@@ -5,6 +5,7 @@
 		<IsTestProject>false</IsTestProject>
 		<RootNamespace>ZodSharp</RootNamespace>
 		<NoWarn>$(NoWarn);CA1303;</NoWarn>
+		<AssemblyName>Purview.ZodSharp.PerformanceTests</AssemblyName>
 	</PropertyGroup>
 
 	<ItemGroup>
